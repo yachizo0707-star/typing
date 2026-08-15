@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ゆびドリル | タイピング練習</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12161f;
+    --surface: #1b212c;
+    --surface-2: #232a37;
+    --line: #313a4a;
+    --text: #e9edf4;
+    --text-dim: #8791a3;
+
+    --f-index: #4c9be8;   /* 人差し指 */
+    --f-middle: #6ec5a8;  /* 中指 */
+    --f-ring: #f4a259;    /* 薬指 */
+    --f-pinky: #e85d75;   /* 小指 */
+    --f-thumb: #b48ead;   /* 親指 */
+    --hl-orange: #ff9d3d; /* ベンチマーク準拠:つかう指のハイライト */
+  }
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Zen Kaku Gothic New', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  input, button{ font-size:16px; -webkit-appearance:none; appearance:none; font-family:inherit; }
+  .display{ font-family:'Kosugi Maru', sans-serif; }
+  .mono{ font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+
+  .screen{ display:none; min-height:100dvh; flex-direction:column; }
+  .screen.active{ display:flex; }
+
+  /* ---------- 共通ヘッダー ---------- */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 20px; border-bottom:1px solid var(--line);
+  }
+  .backbtn{
+    background:none; border:1px solid var(--line); color:var(--text-dim);
+    border-radius:10px; padding:8px 14px; cursor:pointer;
+  }
+  .backbtn:hover{ color:var(--text); border-color:var(--text-dim); }
+  .brand{ font-family:'Kosugi Maru', sans-serif; font-size:15px; letter-spacing:.04em; color:var(--text-dim); }
+
+  /* ---------- トップ画面 ---------- */
+  .hero{
+    padding: 48px 24px 24px;
+    text-align:center;
+  }
+  .hero h1{
+    font-family:'Kosugi Maru', sans-serif;
+    font-size: clamp(28px, 8vw, 44px);
+    margin: 0 0 8px;
+    background: linear-gradient(90deg, var(--f-index), var(--f-middle), var(--f-ring), var(--f-pinky));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p{ color: var(--text-dim); margin:0; font-size:14px; }
+
+  .course-grid{
+    display:grid; grid-template-columns: 1fr; gap:14px;
+    padding: 12px 20px 40px; max-width: 520px; width:100%; margin:0 auto;
+  }
+  @media(min-width:600px){ .course-grid{ grid-template-columns: 1fr 1fr; } }
+
+  .course-card{
+    position:relative;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px;
+    text-align:left;
+    cursor:pointer;
+    color: var(--text);
+    display:flex; flex-direction:column; gap:6px;
+    transition: transform .15s ease, border-color .15s ease;
+  }
+  .course-card:active{ transform: scale(.98); }
+  .course-card:not(.disabled):hover{ border-color: var(--accent, var(--f-index)); }
+  .course-card .num{ font-family:'Kosugi Maru',sans-serif; font-size:12px; color: var(--accent); }
+  .course-card .ttl{ font-size:18px; font-weight:700; }
+  .course-card .desc{ font-size:13px; color:var(--text-dim); line-height:1.5; }
+  .course-card.disabled{ opacity:.45; cursor:default; }
+  .course-card .badge{
+    position:absolute; top:14px; right:14px; font-size:11px;
+    background: var(--surface-2); color:var(--text-dim); padding:3px 8px; border-radius:20px;
+  }
+
+  /* ---------- 指えらび画面 ---------- */
+  .section-title{
+    font-family:'Kosugi Maru', sans-serif;
+    text-align:center; font-size:20px; margin: 28px 0 4px;
+  }
+  .section-sub{ text-align:center; color:var(--text-dim); font-size:13px; margin-bottom:22px; }
+
+  .finger-select{
+    display:flex; flex-wrap:wrap; gap:12px; justify-content:center;
+    padding: 0 20px;
+  }
+  .finger-btn{
+    border-radius: 14px; padding: 14px 16px; min-width:88px;
+    background: var(--surface); border:2px solid var(--line);
+    color: var(--text-dim); cursor:pointer; text-align:center;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  .finger-btn .dot{ width:20px; height:20px; border-radius:50%; }
+  .finger-btn.on{ color: var(--text); background: var(--surface-2); }
+  .finger-btn[data-f="index"].on{ border-color: var(--f-index); box-shadow:0 0 0 3px color-mix(in srgb, var(--f-index) 25%, transparent); }
+  .finger-btn[data-f="middle"].on{ border-color: var(--f-middle); box-shadow:0 0 0 3px color-mix(in srgb, var(--f-middle) 25%, transparent); }
+  .finger-btn[data-f="ring"].on{ border-color: var(--f-ring); box-shadow:0 0 0 3px color-mix(in srgb, var(--f-ring) 25%, transparent); }
+  .finger-btn[data-f="pinky"].on{ border-color: var(--f-pinky); box-shadow:0 0 0 3px color-mix(in srgb, var(--f-pinky) 25%, transparent); }
+  .finger-btn[data-f="thumb"].on{ border-color: var(--f-thumb); box-shadow:0 0 0 3px color-mix(in srgb, var(--f-thumb) 25%, transparent); }
+
+  .hands-wrap{ display:flex; justify-content:center; padding: 26px 20px 6px; }
+  .hands{ display:flex; gap: 28px; }
+  .hand{ display:flex; gap:6px; align-items:flex-end; }
+  .hand.right{ flex-direction:row-reverse; }
+  .finger-shape{
+    width: 22px; border-radius: 12px 12px 6px 6px;
+    background: var(--surface-2); border:1px solid var(--line);
+    transition: background .2s, border-color .2s, box-shadow .2s;
+  }
+  .finger-shape.h-pinky{ height:58px; }
+  .finger-shape.h-ring{ height:76px; }
+  .finger-shape.h-middle{ height:84px; }
+  .finger-shape.h-index{ height:70px; }
+  .finger-shape.h-thumb{ height:46px; align-self:flex-end; margin-bottom:-10px; }
+
+  .presets{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; padding: 20px 20px 0; }
+  .preset-btn{
+    background:none; border:1px solid var(--line); color:var(--text-dim);
+    border-radius: 20px; padding:6px 14px; font-size:12.5px; cursor:pointer;
+  }
+  .preset-btn:hover{ color:var(--text); }
+
+  .time-select{ display:flex; gap:10px; justify-content:center; padding: 26px 20px 0; }
+  .time-btn{
+    background: var(--surface); border:1px solid var(--line); color:var(--text-dim);
+    border-radius: 12px; padding:10px 18px; cursor:pointer; font-size:14px;
+  }
+  .time-btn.on{ color:var(--text); border-color: var(--text); background:var(--surface-2); }
+
+  .mode-select{ display:flex; gap:10px; justify-content:center; padding: 26px 20px 0; }
+  .mode-btn{
+    background: var(--surface); border:1px solid var(--line); color:var(--text-dim);
+    border-radius: 999px; padding:10px 20px; cursor:pointer; font-size:14px;
+  }
+  .mode-btn.on{ color:#0c1016; border-color: var(--hl-orange); background: var(--hl-orange); font-weight:700; }
+  .mode-block{ display:none; }
+  .mode-block.on{ display:flex; }
+
+  .start-wrap{ display:flex; justify-content:center; padding: 32px 20px 40px; }
+  .start-btn{
+    background: linear-gradient(90deg, var(--f-index), var(--f-middle));
+    color:#0c1016; font-weight:700; border:none; border-radius: 999px;
+    padding: 16px 44px; font-size:16px; cursor:pointer;
+    box-shadow: 0 8px 24px -8px color-mix(in srgb, var(--f-index) 60%, transparent);
+  }
+  .start-btn:disabled{ opacity:.35; cursor:default; box-shadow:none; }
+  .hint{ text-align:center; color:var(--text-dim); font-size:12px; padding: 0 24px 20px; }
+
+  /* ---------- 練習画面 ---------- */
+  .practice-top{
+    display:flex; justify-content:space-between; align-items:center;
+    padding: 16px 22px; gap:12px; flex-wrap:wrap;
+  }
+  .stat{ display:flex; flex-direction:column; align-items:center; min-width:64px; }
+  .stat .v{ white-space:nowrap; }
+  .stat .v{ font-family:'Kosugi Maru',sans-serif; font-size:20px; }
+  .stat .l{ font-size:10.5px; color:var(--text-dim); }
+  .combo{ color: var(--f-ring); }
+  .timebar-wrap{ height:6px; background: var(--surface-2); margin: 0 20px; border-radius:4px; overflow:hidden; }
+  .timebar{ height:100%; background: linear-gradient(90deg, var(--f-middle), var(--f-index)); width:100%; transition: width .2s linear; }
+
+  .stage{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px; padding: 10px 20px 20px; }
+  .target-key{
+    font-family:'Kosugi Maru',sans-serif;
+    font-size: 68px; font-weight:700; line-height:1;
+    width:104px; height:104px; border-radius:22px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--surface); border:3px solid var(--line);
+    text-transform:uppercase;
+    transition: transform .08s ease;
+  }
+  .target-key.miss{ animation: shake .28s; }
+  @keyframes shake{ 0%,100%{transform:translateX(0);} 25%{transform:translateX(-8px);} 75%{transform:translateX(8px);} }
+  .finger-call{ font-size:13px; color:var(--text-dim); text-align:center; }
+  .finger-call b{ color: var(--text); }
+
+  .word-progress{
+    font-family:'SFMono-Regular', Consolas, Menlo, monospace;
+    font-size: 20px; letter-spacing:.02em; text-align:center;
+    max-width: 560px; line-height:1.6; padding: 0 16px;
+  }
+  .word-progress .done{ color: var(--f-middle); }
+  .word-progress .cur{ color:#0c1016; background: var(--hl-orange); border-radius:4px; padding:0 2px; }
+  .word-progress .rest{ color: var(--text-dim); }
+  .word-progress .ja-hint{ display:block; font-family:'Zen Kaku Gothic New',sans-serif; font-size:12.5px; color:var(--text-dim); margin-top:6px; letter-spacing:0; }
+  .meta-label{
+    font-family:'Kosugi Maru',sans-serif; font-size:14px; color: var(--f-ring);
+    background: var(--surface-2); border-radius:20px; padding:5px 16px;
+  }
+
+  .kb{ display:flex; flex-direction:column; gap:9px; align-items:center; }
+  .kb-row{ display:flex; gap:9px; }
+  .key{
+    width:50px; height:50px; border-radius:11px; background: var(--surface);
+    border:1px solid var(--line); color:var(--text-dim);
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+    text-transform:uppercase;
+  }
+  .key.dim{ opacity:.28; }
+  .key.active{ color:#0c1016; font-weight:700; transform: translateY(-2px); box-shadow:0 4px 10px -3px rgba(0,0,0,.5); }
+
+  .practice-foot{ text-align:center; padding: 4px 20px 28px; color:var(--text-dim); font-size:12px; }
+
+  .hands-mini-wrap{ display:flex; justify-content:center; padding: 4px 20px 2px; }
+  .hands-mini{ display:flex; gap:14px; }
+  .hand-mini{ display:flex; gap:3px; align-items:flex-end; }
+  .hand-mini.right{ flex-direction:row-reverse; }
+  .finger-mini{
+    width:10px; border-radius:6px 6px 3px 3px;
+    background: var(--surface-2); border:1px solid var(--line);
+    transition: background .12s, border-color .12s, box-shadow .12s;
+  }
+  .finger-mini.h-pinky{ height:26px; }
+  .finger-mini.h-ring{ height:35px; }
+  .finger-mini.h-middle{ height:40px; }
+  .finger-mini.h-index{ height:32px; }
+  .finger-mini.h-thumb{ height:20px; align-self:flex-end; margin-bottom:-4px; }
+  .finger-mini.hl{ background: var(--hl-orange); border-color: var(--hl-orange); box-shadow:0 0 10px -1px var(--hl-orange); }
+  .hands-mini-label{ text-align:center; font-size:10.5px; color:var(--text-dim); padding-bottom:8px; }
+
+  /* ---------- 結果画面 ---------- */
+  .result-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding: 20px; text-align:center; }
+  .result-score{ font-family:'Kosugi Maru',sans-serif; font-size:64px; }
+  .result-grid{
+    display:grid; grid-template-columns: repeat(2,1fr); gap: 10px 26px;
+    background: var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding: 20px 26px; margin-top: 6px; min-width: 260px;
+  }
+  .result-grid .row{ display:flex; justify-content:space-between; gap:16px; font-size:14px; }
+  .result-grid .row span:first-child{ color:var(--text-dim); }
+  .result-actions{ display:flex; gap:12px; margin-top:10px; }
+  .btn-secondary{
+    background:none; border:1px solid var(--line); color:var(--text);
+    border-radius:12px; padding:12px 22px; cursor:pointer;
+  }
+  .btn-primary{
+    background: var(--f-index); border:none; color:#0c1016; font-weight:700;
+    border-radius:12px; padding:12px 22px; cursor:pointer;
+  }
+  .praise{ font-family:'Kosugi Maru',sans-serif; font-size:16px; color: var(--f-middle); }
+  .detail-praise{ font-size:13px; color: var(--text-dim); margin-top:-8px; }
+
+  .miss-panel{
+    background: var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding: 16px 22px; min-width:260px; text-align:left;
+  }
+  .miss-panel .ttl{ font-size:12.5px; color:var(--text-dim); margin-bottom:10px; }
+  .miss-row{ display:flex; align-items:center; gap:10px; padding:5px 0; font-size:14px; }
+  .miss-row .mk{
+    font-family:'Kosugi Maru',sans-serif; width:26px; height:26px; border-radius:8px;
+    background: var(--surface-2); display:flex; align-items:center; justify-content:center;
+    text-transform:uppercase; color: var(--f-pinky); border:1px solid var(--f-pinky);
+  }
+  .miss-row .mr{ color:var(--text-dim); margin-left:auto; }
+  .miss-empty{ color:var(--text-dim); font-size:13px; }
+</style>
+</head>
+<body>
+
+<!-- =================== 画面1: トップ(コース選択) =================== -->
+<div class="screen active" id="screen-top">
+  <div class="hero">
+    <h1>ゆびドリル</h1>
+    <p>ブラインドタッチ練習アプリ</p>
+  </div>
+  <div class="course-grid">
+    <div class="course-card" style="--accent:#4c9be8" onclick="goFingerSelect()">
+      <div class="num">COURSE 1</div>
+      <div class="ttl">基礎コース</div>
+      <div class="desc">ホームポジションから。つかう指をえらんで練習しよう。</div>
+    </div>
+    <div class="course-card" style="--accent:#f4a259" onclick="goWordSelect()">
+      <div class="num">COURSE 3</div>
+      <div class="ttl">英単語</div>
+      <div class="desc">レッスン別の単語・例文でタイピング。</div>
+    </div>
+    <div class="course-card" style="--accent:#6ec5a8" onclick="goKotowazaTop()">
+      <div class="num">COURSE 2</div>
+      <div class="ttl">ことわざ・短文</div>
+      <div class="desc">百人一首やことわざを、日本語のローマ字入力で練習。</div>
+    </div>
+    <div class="course-card disabled" style="--accent:#e85d75">
+      <span class="badge">じゅんび中</span>
+      <div class="num">COURSE 4</div>
+      <div class="ttl">エトセトラ</div>
+      <div class="desc">そのほかの練習コンテンツをこれから追加予定。</div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== 画面2: 指えらび =================== -->
+<div class="screen" id="screen-select">
+  <div class="topbar">
+    <button class="backbtn" onclick="showScreen('screen-top')">← もどる</button>
+    <div class="brand">基礎コース</div>
+    <div style="width:64px"></div>
+  </div>
+
+  <div class="section-title">つかう指をえらぼう</div>
+  <div class="section-sub">1本から5本まで、すきな組み合わせでOK</div>
+
+  <div class="finger-select">
+    <button class="finger-btn" data-f="pinky" onclick="toggleFinger('pinky')"><span class="dot" style="background:var(--f-pinky)"></span>小指</button>
+    <button class="finger-btn" data-f="ring" onclick="toggleFinger('ring')"><span class="dot" style="background:var(--f-ring)"></span>薬指</button>
+    <button class="finger-btn" data-f="middle" onclick="toggleFinger('middle')"><span class="dot" style="background:var(--f-middle)"></span>中指</button>
+    <button class="finger-btn" data-f="index" onclick="toggleFinger('index')"><span class="dot" style="background:var(--f-index)"></span>人差し指</button>
+    <button class="finger-btn" data-f="thumb" onclick="toggleFinger('thumb')"><span class="dot" style="background:var(--f-thumb)"></span>親指</button>
+  </div>
+
+  <div class="hands-wrap">
+    <div class="hands">
+      <div class="hand left">
+        <div class="finger-shape h-pinky" id="hand-left-pinky"></div>
+        <div class="finger-shape h-ring" id="hand-left-ring"></div>
+        <div class="finger-shape h-middle" id="hand-left-middle"></div>
+        <div class="finger-shape h-index" id="hand-left-index"></div>
+        <div class="finger-shape h-thumb" id="hand-left-thumb"></div>
+      </div>
+      <div class="hand right">
+        <div class="finger-shape h-pinky" id="hand-right-pinky"></div>
+        <div class="finger-shape h-ring" id="hand-right-ring"></div>
+        <div class="finger-shape h-middle" id="hand-right-middle"></div>
+        <div class="finger-shape h-index" id="hand-right-index"></div>
+        <div class="finger-shape h-thumb" id="hand-right-thumb"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="presets">
+    <button class="preset-btn" onclick="applyPreset(['index'])">人差し指だけ</button>
+    <button class="preset-btn" onclick="applyPreset(['index','middle'])">人差し指+中指</button>
+    <button class="preset-btn" onclick="applyPreset(['index','middle','ring','pinky'])">親指以外ぜんぶ</button>
+    <button class="preset-btn" onclick="applyPreset(['index','middle','ring','pinky','thumb'])">10本ぜんぶ</button>
+  </div>
+
+  <div class="section-title" style="margin-top:30px;">モードをえらぼう</div>
+  <div class="mode-select">
+    <button class="mode-btn on" data-m="time" onclick="setMode('time')">じかんモード</button>
+    <button class="mode-btn" data-m="attack" onclick="setMode('attack')">タイムアタック</button>
+  </div>
+
+  <div class="mode-block on" id="block-time">
+    <div class="time-select">
+      <button class="time-btn" data-t="30" onclick="setTime(30)">30秒</button>
+      <button class="time-btn on" data-t="60" onclick="setTime(60)">60秒</button>
+      <button class="time-btn" data-t="90" onclick="setTime(90)">90秒</button>
+      <button class="time-btn" data-t="120" onclick="setTime(120)">120秒</button>
+    </div>
+  </div>
+
+  <div class="mode-block" id="block-attack">
+    <div class="time-select">
+      <button class="time-btn" data-n="20" onclick="setAttackTarget(20)">20文字</button>
+      <button class="time-btn on" data-n="50" onclick="setAttackTarget(50)">50文字</button>
+      <button class="time-btn" data-n="100" onclick="setAttackTarget(100)">100文字</button>
+    </div>
+  </div>
+
+  <div class="start-wrap">
+    <button class="start-btn" id="startBtn" disabled onclick="startPractice()">▶ 練習スタート</button>
+  </div>
+  <div class="hint">キーボードのあるパソコンで練習してね</div>
+</div>
+
+<!-- =================== 画面2b: 英単語コース設定 =================== -->
+<div class="screen" id="screen-word-select">
+  <div class="topbar">
+    <button class="backbtn" onclick="showScreen('screen-top')">← もどる</button>
+    <div class="brand">英単語</div>
+    <div style="width:64px"></div>
+  </div>
+
+  <div class="section-title">レッスンをえらぼう</div>
+  <div class="section-sub">レッスンから出題するよ</div>
+  <div class="finger-select" id="lessonPills" style="flex-wrap:wrap; padding:0 16px;"></div>
+
+  <div class="section-title" style="margin-top:26px;">なにを打つ？</div>
+  <div class="mode-select">
+    <button class="mode-btn on" data-wm="word" onclick="setWordUnit('word')">単語</button>
+    <button class="mode-btn" data-wm="sentence" id="sentenceUnitBtn" onclick="setWordUnit('sentence')">例文</button>
+  </div>
+
+  <div class="section-title" style="margin-top:26px;">じかんをえらぼう</div>
+  <div class="time-select">
+    <button class="time-btn" data-wt="30" onclick="setWordTime(30)">30秒</button>
+    <button class="time-btn on" data-wt="60" onclick="setWordTime(60)">60秒</button>
+    <button class="time-btn" data-wt="90" onclick="setWordTime(90)">90秒</button>
+    <button class="time-btn" data-wt="120" onclick="setWordTime(120)">120秒</button>
+  </div>
+
+  <div class="start-wrap">
+    <button class="start-btn" id="wordStartBtn" onclick="startWordPractice()">▶ 練習スタート</button>
+  </div>
+  <div class="hint" id="wordHint">キーボードのあるパソコンで練習してね</div>
+</div>
+
+<!-- =================== 画面2c: ことわざ・短文トップ =================== -->
+<div class="screen" id="screen-kotowaza-top">
+  <div class="topbar">
+    <button class="backbtn" onclick="showScreen('screen-top')">← もどる</button>
+    <div class="brand">ことわざ・短文</div>
+    <div style="width:64px"></div>
+  </div>
+  <div class="course-grid" style="padding-top:20px;">
+    <div class="course-card" style="--accent:#e85d75" onclick="goHyakuninSelect()">
+      <div class="num">A</div>
+      <div class="ttl">百人一首</div>
+      <div class="desc">1番〜100番、10首ずつえらんで上の句・下の句を練習。</div>
+    </div>
+    <div class="course-card" style="--accent:#6ec5a8" onclick="goKotowazaSelect()">
+      <div class="num">B</div>
+      <div class="ttl">ことわざ</div>
+      <div class="desc">ことわざと意味をセットでタイピング。</div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== 画面2d: 百人一首えらび =================== -->
+<div class="screen" id="screen-hyakunin-select">
+  <div class="topbar">
+    <button class="backbtn" onclick="showScreen('screen-kotowaza-top')">← もどる</button>
+    <div class="brand">百人一首</div>
+    <div style="width:64px"></div>
+  </div>
+  <div class="section-title">出題する範囲をえらぼう</div>
+  <div class="section-sub">10首ずつのグループを、いくつでも選べるよ</div>
+  <div class="finger-select" id="hyakuninGroups" style="flex-wrap:wrap; padding:0 16px;"></div>
+
+  <div class="section-title" style="margin-top:26px;">じかんをえらぼう</div>
+  <div class="time-select">
+    <button class="time-btn" data-ht="30" onclick="setHyakuninTime(30)">30秒</button>
+    <button class="time-btn on" data-ht="60" onclick="setHyakuninTime(60)">60秒</button>
+    <button class="time-btn" data-ht="90" onclick="setHyakuninTime(90)">90秒</button>
+    <button class="time-btn" data-ht="120" onclick="setHyakuninTime(120)">120秒</button>
+  </div>
+
+  <div class="start-wrap">
+    <button class="start-btn" id="hyakuninStartBtn" disabled onclick="startHyakuninPractice()">▶ 練習スタート</button>
+  </div>
+  <div class="hint">キーボードのあるパソコンで練習してね</div>
+</div>
+
+<!-- =================== 画面2e: ことわざえらび =================== -->
+<div class="screen" id="screen-kotowaza-select">
+  <div class="topbar">
+    <button class="backbtn" onclick="showScreen('screen-kotowaza-top')">← もどる</button>
+    <div class="brand">ことわざ</div>
+    <div style="width:64px"></div>
+  </div>
+  <div class="section-title">モードをえらぼう</div>
+  <div class="section-sub">ことわざ→意味の順で、セットで出題されるよ</div>
+  <div class="mode-select">
+    <button class="mode-btn on" data-km="time" onclick="setKotowazaMode('time')">通常(じかん)</button>
+    <button class="mode-btn" data-km="attack" onclick="setKotowazaMode('attack')">タイムアタック</button>
+  </div>
+
+  <div class="mode-block on" id="block-kotowaza-time">
+    <div class="section-title" style="margin-top:26px;">じかんをえらぼう</div>
+    <div class="time-select">
+      <button class="time-btn" data-kt="30" onclick="setKotowazaTime(30)">30秒</button>
+      <button class="time-btn on" data-kt="60" onclick="setKotowazaTime(60)">60秒</button>
+      <button class="time-btn" data-kt="90" onclick="setKotowazaTime(90)">90秒</button>
+      <button class="time-btn" data-kt="120" onclick="setKotowazaTime(120)">120秒</button>
+    </div>
+  </div>
+  <div class="mode-block" id="block-kotowaza-attack">
+    <div class="section-title" style="margin-top:26px;">ことわざ10こ＋意味10こ＝20問</div>
+    <div class="hint" style="padding-top:0;">ランダムでえらばれた10このことわざを、意味とセットで出題するよ</div>
+  </div>
+
+  <div class="start-wrap">
+    <button class="start-btn" onclick="startKotowazaPractice()">▶ 練習スタート</button>
+  </div>
+  <div class="hint">キーボードのあるパソコンで練習してね</div>
+</div>
+
+<!-- =================== 画面3: 練習中 =================== -->
+<div class="screen" id="screen-practice">
+  <div class="topbar">
+    <button class="backbtn" onclick="quitPractice()">✕ やめる</button>
+    <div class="brand" id="practiceBrand">基礎コース</div>
+    <div style="width:64px"></div>
+  </div>
+
+  <div class="practice-top">
+    <div class="stat"><div class="v" id="scoreVal">0</div><div class="l">スコア</div></div>
+    <div class="stat"><div class="v combo" id="comboVal">0</div><div class="l">コンボ</div></div>
+    <div class="stat"><div class="v" id="timeVal">60</div><div class="l" id="timeLabel">のこり秒</div></div>
+    <div class="stat"><div class="v" id="rateVal">100%</div><div class="l">正解率</div></div>
+  </div>
+  <div class="timebar-wrap"><div class="timebar" id="timebar"></div></div>
+
+  <div class="stage">
+    <div class="meta-label" id="metaLabel" style="display:none;"></div>
+    <div class="target-key" id="targetKey">a</div>
+    <div class="word-progress" id="wordProgress" style="display:none;"></div>
+    <div class="finger-call">つかう指: <b id="fingerCallText">左手・人差し指</b></div>
+
+    <div class="kb" id="kb"></div>
+
+    <div class="hands-mini-wrap">
+      <div class="hands-mini">
+        <div class="hand-mini left">
+          <div class="finger-mini h-pinky" id="mini-left-pinky"></div>
+          <div class="finger-mini h-ring" id="mini-left-ring"></div>
+          <div class="finger-mini h-middle" id="mini-left-middle"></div>
+          <div class="finger-mini h-index" id="mini-left-index"></div>
+          <div class="finger-mini h-thumb" id="mini-left-thumb"></div>
+        </div>
+        <div class="hand-mini right">
+          <div class="finger-mini h-pinky" id="mini-right-pinky"></div>
+          <div class="finger-mini h-ring" id="mini-right-ring"></div>
+          <div class="finger-mini h-middle" id="mini-right-middle"></div>
+          <div class="finger-mini h-index" id="mini-right-index"></div>
+          <div class="finger-mini h-thumb" id="mini-right-thumb"></div>
+        </div>
+      </div>
+    </div>
+    <div class="hands-mini-label" id="miniHandLabel">オレンジの指をつかってね</div>
+  </div>
+  <div class="practice-foot">正しいキーをおすと次のもじに進みます</div>
+</div>
+
+<!-- =================== 画面4: 結果 =================== -->
+<div class="screen" id="screen-result">
+  <div class="topbar">
+    <div style="width:64px"></div>
+    <div class="brand">けっか</div>
+    <div style="width:64px"></div>
+  </div>
+  <div class="result-wrap">
+    <div class="praise" id="praiseText">よくがんばったね！</div>
+    <div class="detail-praise" id="detailPraiseText"></div>
+    <div class="result-score" id="finalScore">0</div>
+    <div class="result-grid">
+      <div class="row"><span>打った文字数</span><span id="rTotal">0</span></div>
+      <div class="row"><span>正解</span><span id="rCorrect">0</span></div>
+      <div class="row"><span>ミス</span><span id="rMiss">0</span></div>
+      <div class="row"><span>正解率</span><span id="rRate">0%</span></div>
+      <div class="row"><span>さいだいコンボ</span><span id="rMaxCombo">0</span></div>
+      <div class="row"><span id="rFingersLabel">つかった指</span><span id="rFingers">-</span></div>
+    </div>
+    <div class="miss-panel">
+      <div class="ttl">にがてな文字</div>
+      <div id="missList"><div class="miss-empty">ミスなし！パーフェクト！</div></div>
+    </div>
+    <div class="result-actions">
+      <button class="btn-secondary" onclick="showScreen('screen-top')">コース選択へ</button>
+      <button class="btn-primary" onclick="retryPractice()">もう一回</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   データ定義(拡張ポイント)
+   ・今後コース2〜4を追加する場合は WORD_BANKS に単語/例文の
+     配列を追加し、対応するコース画面・出題ロジックを増設する。
+   ・FINGER_KEYS を編集すれば出題対象のキー割り当てを調整できる。
+========================================================= */
+
+// JIS配列・ホームポジション基準の指割り当て(アルファベット26字を網羅)
+const FINGER_KEYS = {
+  pinky:  { left:['q','a','z'],           right:['p'] },
+  ring:   { left:['w','s','x'],           right:['o','l'] },
+  middle: { left:['e','d','c'],           right:['i','k'] },
+  index:  { left:['r','t','f','g','v','b'], right:['y','u','h','j','n','m'] },
+  thumb:  { left:[' '],                   right:[' '] }
+};
+
+const FINGER_LABEL = { pinky:'小指', ring:'薬指', middle:'中指', index:'人差し指', thumb:'親指' };
+
+// 拡張用プレースホルダー(コース2〜4はここに単語/例文データを追加していく)
+const WORD_BANKS = {
+  proverbs: [],   // ことわざ・短文コース用
+  english: [],    // 英単語コース用
+  textbook: []    // 教科書準拠コース用(例: NEW TREASURE Stage1と連携予定)
+};
+
+// 英語たんけん隊(NEW TREASURE Stage1準拠)のレッスン別データを実データとして格納
+const LESSON_WORDS = [{"key": "intro", "label": "はじめに", "words": [{"en": "boy", "ja": "男の子"}, {"en": "girl", "ja": "女の子"}, {"en": "man", "ja": "男の人"}, {"en": "woman", "ja": "女の人"}, {"en": "baby", "ja": "赤ちゃん"}, {"en": "father", "ja": "父"}, {"en": "mother", "ja": "母"}, {"en": "brother", "ja": "兄・弟"}, {"en": "sister", "ja": "姉・妹"}, {"en": "grandfather", "ja": "祖父"}, {"en": "grandmother", "ja": "祖母"}, {"en": "teacher", "ja": "先生"}, {"en": "friend", "ja": "友達"}, {"en": "happy", "ja": "幸せな、うれしい"}, {"en": "tired", "ja": "疲れた"}, {"en": "hungry", "ja": "お腹がすいた"}, {"en": "sleepy", "ja": "眠い"}, {"en": "busy", "ja": "忙しい"}, {"en": "classroom", "ja": "教室"}, {"en": "school", "ja": "学校"}, {"en": "gym", "ja": "体育館"}, {"en": "library", "ja": "図書館、図書室"}, {"en": "playground", "ja": "運動場、グラウンド"}, {"en": "swimming pool", "ja": "プール"}, {"en": "restroom", "ja": "トイレ、化粧室"}, {"en": "name", "ja": "名前"}, {"en": "question", "ja": "質問"}, {"en": "school trip", "ja": "修学旅行"}, {"en": "clock", "ja": "時計"}, {"en": "blackboard", "ja": "黒板"}, {"en": "chalk", "ja": "チョーク"}, {"en": "desk", "ja": "机"}, {"en": "chair", "ja": "いす"}, {"en": "dictionary", "ja": "辞書"}, {"en": "notebook", "ja": "ノート"}, {"en": "pencil", "ja": "鉛筆"}, {"en": "eraser", "ja": "消しゴム、黒板消し"}, {"en": "ink", "ja": "インク"}, {"en": "book", "ja": "本"}, {"en": "textbook", "ja": "教科書"}, {"en": "picture", "ja": "絵、写真"}, {"en": "bag", "ja": "かばん"}, {"en": "subject", "ja": "教科"}, {"en": "english", "ja": "英語"}, {"en": "math", "ja": "算数、数学"}, {"en": "japanese", "ja": "国語（の）"}, {"en": "science", "ja": "理科、科学"}, {"en": "social studies", "ja": "社会"}, {"en": "arts and crafts", "ja": "図工、図画工作"}, {"en": "calligraphy", "ja": "書道"}, {"en": "home economics", "ja": "家庭科"}, {"en": "moral education", "ja": "道徳"}, {"en": "music", "ja": "音楽"}, {"en": "guitar", "ja": "ギター"}, {"en": "violin", "ja": "バイオリン"}, {"en": "piano", "ja": "ピアノ"}, {"en": "brass band", "ja": "吹奏楽、ブラスバンド"}, {"en": "drum", "ja": "太鼓、ドラム"}, {"en": "recorder", "ja": "リコーダー"}, {"en": "dancing", "ja": "ダンス"}, {"en": "fishing", "ja": "釣り"}, {"en": "hiking", "ja": "ハイキング"}, {"en": "reading", "ja": "読書すること"}, {"en": "running", "ja": "走ること"}, {"en": "swimming", "ja": "水泳、水泳すること"}, {"en": "skiing", "ja": "スキー"}, {"en": "skating", "ja": "スケート"}, {"en": "singing", "ja": "歌うこと"}, {"en": "baseball", "ja": "野球"}, {"en": "tennis", "ja": "テニス"}, {"en": "soccer", "ja": "サッカー"}, {"en": "volleyball", "ja": "バレーボール"}, {"en": "table tennis", "ja": "卓球"}, {"en": "rugby", "ja": "ラグビー"}, {"en": "dodge ball", "ja": "ドッジボール"}, {"en": "car", "ja": "車、自動車"}, {"en": "bus", "ja": "バス"}, {"en": "bike", "ja": "自転車（bicycle）"}, {"en": "train", "ja": "電車"}, {"en": "station", "ja": "駅"}, {"en": "airplane", "ja": "飛行機"}, {"en": "zoo", "ja": "動物園"}, {"en": "aquarium", "ja": "水族館"}, {"en": "cat", "ja": "ネコ"}, {"en": "dog", "ja": "犬"}, {"en": "bird", "ja": "鳥"}, {"en": "lion", "ja": "ライオン"}, {"en": "monkey", "ja": "サル"}, {"en": "panda", "ja": "パンダ"}, {"en": "rabbit", "ja": "ウサギ"}, {"en": "fox", "ja": "キツネ"}, {"en": "sheep", "ja": "ヒツジ"}, {"en": "koala", "ja": "コアラ"}, {"en": "mouse", "ja": "ネズミ"}, {"en": "penguin", "ja": "ペンギン"}, {"en": "pig", "ja": "ブタ"}, {"en": "horse", "ja": "馬"}, {"en": "zebra", "ja": "シマウマ"}, {"en": "snake", "ja": "ヘビ"}, {"en": "frog", "ja": "カエル"}, {"en": "dolphin", "ja": "イルカ"}, {"en": "octopus", "ja": "タコ"}, {"en": "apple", "ja": "リンゴ"}, {"en": "strawberry", "ja": "イチゴ"}, {"en": "orange", "ja": "オレンジ"}, {"en": "peach", "ja": "モモ"}, {"en": "lemon", "ja": "レモン"}, {"en": "banana", "ja": "バナナ"}, {"en": "corn", "ja": "トウモロコシ"}, {"en": "grape", "ja": "ブドウ"}, {"en": "carrot", "ja": "ニンジン"}, {"en": "tomato", "ja": "トマト"}, {"en": "cucumber", "ja": "キュウリ"}, {"en": "onion", "ja": "タマネギ"}, {"en": "potato", "ja": "ジャガイモ"}, {"en": "cabbage", "ja": "キャベツ"}, {"en": "mushroom", "ja": "マッシュルーム、きのこ"}, {"en": "lettuce", "ja": "レタス"}, {"en": "breakfast", "ja": "朝食"}, {"en": "lunch", "ja": "昼食"}, {"en": "dinner", "ja": "夕食"}, {"en": "dessert", "ja": "デザート"}, {"en": "egg", "ja": "卵"}, {"en": "fish", "ja": "魚"}, {"en": "beef", "ja": "牛肉"}, {"en": "pork", "ja": "豚肉"}, {"en": "chicken", "ja": "鶏肉"}, {"en": "curry", "ja": "カレー"}, {"en": "sandwich", "ja": "サンドイッチ"}, {"en": "hamburger", "ja": "ハンバーガー"}, {"en": "spaghetti", "ja": "スパゲッティ"}, {"en": "steak", "ja": "ステーキ"}, {"en": "salad", "ja": "サラダ"}, {"en": "rice", "ja": "米、ご飯"}, {"en": "cake", "ja": "ケーキ"}, {"en": "bread", "ja": "パン"}, {"en": "jam", "ja": "ジャム"}, {"en": "milk", "ja": "牛乳、ミルク"}, {"en": "tea", "ja": "お茶、紅茶"}, {"en": "coffee", "ja": "コーヒー"}, {"en": "pudding", "ja": "プリン"}, {"en": "house", "ja": "家"}, {"en": "window", "ja": "窓"}, {"en": "door", "ja": "ドア"}, {"en": "garden", "ja": "庭"}, {"en": "key", "ja": "鍵"}, {"en": "rope", "ja": "なわ、ロープ"}, {"en": "umbrella", "ja": "傘"}, {"en": "box", "ja": "箱"}, {"en": "map", "ja": "地図"}, {"en": "tv", "ja": "テレビ"}, {"en": "doll", "ja": "人形"}, {"en": "computer", "ja": "コンピューター"}, {"en": "bed", "ja": "ベッド"}, {"en": "watch", "ja": "腕時計"}, {"en": "camera", "ja": "カメラ"}, {"en": "telephone", "ja": "電話"}, {"en": "album", "ja": "アルバム"}, {"en": "sun", "ja": "太陽"}, {"en": "star", "ja": "星"}, {"en": "mountain", "ja": "山"}, {"en": "river", "ja": "川"}, {"en": "tree", "ja": "木"}, {"en": "ear", "ja": "耳"}, {"en": "eye", "ja": "目"}, {"en": "nose", "ja": "鼻"}, {"en": "mouth", "ja": "口"}, {"en": "hair", "ja": "髪、毛"}, {"en": "face", "ja": "顔"}, {"en": "neck", "ja": "首"}, {"en": "head", "ja": "頭"}, {"en": "shoulder", "ja": "肩"}, {"en": "arm", "ja": "腕"}, {"en": "hand", "ja": "手"}, {"en": "finger", "ja": "指"}, {"en": "leg", "ja": "足（全体）"}, {"en": "knee", "ja": "ひざ"}, {"en": "foot", "ja": "足（足首から下）"}, {"en": "pink", "ja": "ピンク色（の）"}, {"en": "red", "ja": "赤色（の）"}, {"en": "brown", "ja": "茶色（の）"}, {"en": "yellow", "ja": "黄色（の）"}, {"en": "green", "ja": "緑色（の）"}, {"en": "blue", "ja": "青色（の）"}, {"en": "violet", "ja": "紫色、スミレ（の）"}, {"en": "purple", "ja": "紫色（の）"}, {"en": "white", "ja": "白色（の）"}, {"en": "gray", "ja": "灰色（の）"}, {"en": "black", "ja": "黒色（の）"}, {"en": "calendar", "ja": "カレンダー"}, {"en": "sunday", "ja": "日曜日"}, {"en": "monday", "ja": "月曜日"}, {"en": "tuesday", "ja": "火曜日"}, {"en": "wednesday", "ja": "水曜日"}, {"en": "thursday", "ja": "木曜日"}, {"en": "friday", "ja": "金曜日"}, {"en": "saturday", "ja": "土曜日"}, {"en": "january", "ja": "1月"}, {"en": "february", "ja": "2月"}, {"en": "march", "ja": "3月"}, {"en": "april", "ja": "4月"}, {"en": "may", "ja": "5月"}, {"en": "june", "ja": "6月"}, {"en": "july", "ja": "7月"}, {"en": "august", "ja": "8月"}, {"en": "september", "ja": "9月"}, {"en": "october", "ja": "10月"}, {"en": "november", "ja": "11月"}, {"en": "december", "ja": "12月"}, {"en": "spring", "ja": "春"}, {"en": "summer", "ja": "夏"}, {"en": "fall", "ja": "秋（米国）"}, {"en": "autumn", "ja": "秋（英国）"}, {"en": "winter", "ja": "冬"}, {"en": "one", "ja": "1（の）、1つ（の）"}, {"en": "two", "ja": "2（の）"}, {"en": "three", "ja": "3（の）"}, {"en": "four", "ja": "4（の）"}, {"en": "five", "ja": "5（の）"}, {"en": "six", "ja": "6（の）"}, {"en": "seven", "ja": "7（の）"}, {"en": "eight", "ja": "8（の）"}, {"en": "nine", "ja": "9（の）"}, {"en": "ten", "ja": "10（の）"}, {"en": "eleven", "ja": "11（の）"}, {"en": "twelve", "ja": "12（の）"}, {"en": "thirteen", "ja": "13（の）"}, {"en": "fourteen", "ja": "14（の）"}, {"en": "fifteen", "ja": "15（の）"}, {"en": "sixteen", "ja": "16（の）"}, {"en": "seventeen", "ja": "17（の）"}, {"en": "eighteen", "ja": "18（の）"}, {"en": "nineteen", "ja": "19（の）"}, {"en": "twenty", "ja": "20（の）"}, {"en": "thirty", "ja": "30（の）"}, {"en": "forty", "ja": "40（の）"}, {"en": "fifty", "ja": "50（の）"}, {"en": "sixty", "ja": "60（の）"}, {"en": "seventy", "ja": "70（の）"}, {"en": "eighty", "ja": "80（の）"}, {"en": "ninety", "ja": "90（の）"}, {"en": "hundred", "ja": "100（の）"}, {"en": "thousand", "ja": "1000（の）"}, {"en": "zero", "ja": "0、ゼロ"}, {"en": "first", "ja": "第1（の）、1番（の）"}, {"en": "second", "ja": "第2（の）、2番（の）"}, {"en": "third", "ja": "第3（の）、3番（の）"}, {"en": "fourth", "ja": "第4（の）、4番（の）"}, {"en": "fifth", "ja": "第5（の）、5番（の）"}, {"en": "sixth", "ja": "第6（の）、6番（の）"}, {"en": "seventh", "ja": "第7（の）、7番（の）"}, {"en": "eighth", "ja": "第8（の）、8番（の）"}, {"en": "ninth", "ja": "第9（の）、9番（の）"}, {"en": "tenth", "ja": "第10（の）、10番（の）"}, {"en": "eleventh", "ja": "第11（の）、11番（の）"}, {"en": "twelfth", "ja": "第12（の）、12番（の）"}, {"en": "thirteenth", "ja": "第13（の）、13番（の）"}, {"en": "fourteenth", "ja": "第14（の）、14番（の）"}, {"en": "fifteenth", "ja": "第15（の）、15番（の）"}, {"en": "sixteenth", "ja": "第16（の）、16番（の）"}, {"en": "seventeenth", "ja": "第17（の）、17番（の）"}, {"en": "eighteenth", "ja": "第18（の）、18番（の）"}, {"en": "nineteenth", "ja": "第19（の）、19番（の）"}, {"en": "twentieth", "ja": "第20（の）、20番（の）"}, {"en": "thirtieth", "ja": "第30（の）、30番（の）"}, {"en": "fortieth", "ja": "第40（の）、40番（の）"}, {"en": "fiftieth", "ja": "第50（の）、50番（の）"}, {"en": "sixtieth", "ja": "第60（の）、60番（の）"}, {"en": "seventieth", "ja": "第70（の）、70番（の）"}, {"en": "eightieth", "ja": "第80（の）、80番（の）"}, {"en": "ninetieth", "ja": "第90（の）、90番（の）"}, {"en": "hundredth", "ja": "第100（の）、100番（の）"}, {"en": "thousandth", "ja": "第1000（の）、1000番（の）"}]}, {"key": "lesson1", "label": "Lesson 1", "words": [{"en": "america", "ja": "アメリカ、アメリカ人の"}, {"en": "australia", "ja": "オーストラリア"}, {"en": "canada", "ja": "カナダ"}, {"en": "china", "ja": "中国"}, {"en": "japan", "ja": "日本"}, {"en": "south korea", "ja": "韓国"}, {"en": "france", "ja": "フランス"}, {"en": "the uk", "ja": "イギリス"}, {"en": "hello", "ja": "こんにちは"}, {"en": "hi", "ja": "やあ"}, {"en": "i", "ja": "私は、私が"}, {"en": "am", "ja": "be動詞のIの形"}, {"en": "please", "ja": "どうぞ"}, {"en": "call", "ja": "〜と呼ぶ"}, {"en": "me", "ja": "私を、私に"}, {"en": "nice", "ja": "いい"}, {"en": "to", "ja": "〜に"}, {"en": "meet", "ja": "会う"}, {"en": "you", "ja": "あなたは、あなたを"}, {"en": "too", "ja": "〜も"}, {"en": "are", "ja": "be動詞のYou/2・3人称複数の形"}, {"en": "from", "ja": "〜出身の、〜から"}, {"en": "no", "ja": "いいえ"}, {"en": "not", "ja": "〜ない"}, {"en": "my", "ja": "私の"}, {"en": "is", "ja": "be動詞の3人称単数の形"}, {"en": "yes", "ja": "はい、そうです"}, {"en": "this", "ja": "これ、この"}, {"en": "your", "ja": "あなたの（あなたたちの）"}, {"en": "teacher", "ja": "先生、教師"}, {"en": "student", "ja": "生徒、学生"}, {"en": "card", "ja": "カード"}, {"en": "here", "ja": "ここ（に）"}, {"en": "and", "ja": "〜と、そして"}, {"en": "locker", "ja": "ロッカー"}, {"en": "thank", "ja": "〜に感謝する"}, {"en": "that", "ja": "あれ、あの"}, {"en": "it", "ja": "それ"}, {"en": "sister", "ja": "姉、妹"}, {"en": "ok", "ja": "オーケー、わかりました"}, {"en": "start", "ja": "始める"}, {"en": "everyone", "ja": "みんな、皆さん"}, {"en": "year", "ja": "年、〜歳"}]}, {"key": "lesson2", "label": "Lesson 2", "words": [{"en": "old", "ja": "年〜"}, {"en": "favorite", "ja": "お気に入りの"}, {"en": "japanese", "ja": "日本人（の）、日本語"}, {"en": "food", "ja": "食べ物、料理"}, {"en": "next", "ja": "次の人、次の"}, {"en": "like", "ja": "〜が好きである、〜のような"}, {"en": "hot", "ja": "熱い"}, {"en": "good", "ja": "よい"}, {"en": "job", "ja": "仕事、職業"}, {"en": "finland", "ja": "フィンランド"}, {"en": "salmon", "ja": "サーモン"}, {"en": "soup", "ja": "スープ"}, {"en": "new york", "ja": "ニューヨーク（都市）"}, {"en": "sydney", "ja": "シドニー（都市）"}, {"en": "beijing", "ja": "北京（都市）"}, {"en": "paris", "ja": "パリ（都市）"}, {"en": "london", "ja": "ロンドン（都市）"}, {"en": "hmm", "ja": "う〜ん"}, {"en": "delicious", "ja": "おいしい"}, {"en": "sweet", "ja": "甘い"}, {"en": "sour", "ja": "すっぱい"}, {"en": "hard", "ja": "かたい、難しい"}, {"en": "soft", "ja": "やわらかい"}, {"en": "chef", "ja": "料理人、シェフ"}, {"en": "doctor", "ja": "医者"}, {"en": "nurse", "ja": "看護師"}, {"en": "firefighter", "ja": "消防士"}, {"en": "police officer", "ja": "警察官"}, {"en": "pilot", "ja": "パイロット"}, {"en": "office worker", "ja": "会社員"}, {"en": "vet", "ja": "獣医"}, {"en": "he", "ja": "彼は（が）"}, {"en": "hong kong", "ja": "香港（地域）"}, {"en": "classmate", "ja": "クラスメイト、同級生"}, {"en": "she", "ja": "彼女は（が）"}, {"en": "her", "ja": "彼女の"}, {"en": "father", "ja": "父、お父さん"}, {"en": "mother", "ja": "母、お母さん"}, {"en": "math", "ja": "数学"}, {"en": "science", "ja": "理科"}, {"en": "english", "ja": "英語"}, {"en": "friend", "ja": "友達"}, {"en": "his", "ja": "彼の"}, {"en": "what", "ja": "何、何の"}, {"en": "a", "ja": "1つの、1人の"}, {"en": "big", "ja": "大きい"}, {"en": "book", "ja": "本"}, {"en": "lunchbox", "ja": "弁当箱"}, {"en": "hey", "ja": "やあ、おい"}, {"en": "time", "ja": "時間"}, {"en": "lunch", "ja": "昼食"}, {"en": "now", "ja": "今"}, {"en": "radish", "ja": "大根、ラディッシュ"}, {"en": "an", "ja": "1つの（母音の前）"}, {"en": "eggplant", "ja": "ナス"}, {"en": "tall", "ja": "背が高い"}, {"en": "boy", "ja": "男の子、少年"}, {"en": "small", "ja": "小さい"}, {"en": "hungry", "ja": "お腹のすいた"}, {"en": "bad", "ja": "悪い"}, {"en": "new", "ja": "新しい"}, {"en": "young", "ja": "若い"}, {"en": "man", "ja": "男の人、男性"}, {"en": "long", "ja": "長い"}, {"en": "short", "ja": "短い、背が低い"}, {"en": "girl", "ja": "女の子"}, {"en": "high", "ja": "高い"}, {"en": "low", "ja": "低い"}, {"en": "building", "ja": "建物"}, {"en": "lady", "ja": "女の人、女性"}, {"en": "who", "ja": "誰"}, {"en": "or", "ja": "〜か、〜または"}, {"en": "oh", "ja": "おお、ああ"}, {"en": "see", "ja": "わかる（I see.←）"}, {"en": "really", "ja": "本当（に）"}, {"en": "right", "ja": "正しい"}, {"en": "temple", "ja": "寺"}, {"en": "uncle", "ja": "おじ"}, {"en": "fruit", "ja": "果物"}, {"en": "vegetable", "ja": "野菜"}, {"en": "family", "ja": "家族"}, {"en": "on", "ja": "〜に（日・曜日）"}, {"en": "woman", "ja": "女の人、女性"}, {"en": "very", "ja": "とても"}, {"en": "busy", "ja": "忙しい"}, {"en": "elementary school", "ja": "小学校"}, {"en": "great", "ja": "すごい、すばらしい"}, {"en": "beautiful", "ja": "美しい"}, {"en": "for", "ja": "〜のために、〜に"}, {"en": "wedding", "ja": "結婚式"}, {"en": "so", "ja": "〜など（and so on←）"}, {"en": "toy", "ja": "おもちゃ"}, {"en": "tool", "ja": "道具、工具"}, {"en": "at", "ja": "〜が得意で（be good at←）"}, {"en": "kind", "ja": "親切な、やさしい"}, {"en": "grandfather", "ja": "祖父"}, {"en": "grandmother", "ja": "祖母"}, {"en": "aunt", "ja": "おば"}, {"en": "dad", "ja": "パパ、お父さん"}, {"en": "mom", "ja": "ママ、お母さん"}]}, {"key": "lesson3", "label": "Lesson 3", "words": [{"en": "cousin", "ja": "いとこ"}, {"en": "brother", "ja": "兄、弟"}, {"en": "funny", "ja": "おかしい、こっけいな"}, {"en": "shy", "ja": "恥ずかしがりの"}, {"en": "friendly", "ja": "友好的な、親しみやすい"}, {"en": "smart", "ja": "頭のよい"}, {"en": "play", "ja": "〜をする（楽器・スポーツ）"}, {"en": "in", "ja": "〜の中に、〜（の中）に"}, {"en": "the", "ja": "その（特定のものを指す）"}, {"en": "park", "ja": "公園"}, {"en": "with", "ja": "〜と一緒に"}, {"en": "piano", "ja": "ピアノ"}, {"en": "trumpet", "ja": "トランペット"}, {"en": "drum", "ja": "太鼓、ドラム"}, {"en": "soccer", "ja": "サッカー"}, {"en": "basketball", "ja": "バスケットボール"}, {"en": "every", "ja": "毎〜、〜ごとに"}, {"en": "do", "ja": "（一般動詞とともに用い、疑問文・応答文・否定文を作る）"}, {"en": "but", "ja": "しかし"}, {"en": "tennis", "ja": "テニス"}, {"en": "practice", "ja": "〜を練習する"}, {"en": "week", "ja": "1週間、週"}, {"en": "after", "ja": "〜のあとに"}, {"en": "after school", "ja": "放課後（に）"}, {"en": "much", "ja": "たくさん、非常に"}, {"en": "day", "ja": "日、1日"}, {"en": "speak", "ja": "〜を話す"}, {"en": "study", "ja": "〜を勉強する"}, {"en": "party", "ja": "パーティー"}, {"en": "american", "ja": "アメリカ（合衆国）の、アメリカ人の"}, {"en": "sandwich", "ja": "サンドイッチ"}, {"en": "how", "ja": "どのようにして、どんなふうに"}, {"en": "about", "ja": "〜について"}, {"en": "candy", "ja": "砂糖菓子、キャンディー"}, {"en": "over", "ja": "〜を越えて、〜の向こうに"}, {"en": "there", "ja": "あそこに、向こうに"}, {"en": "many", "ja": "たくさんの、多くの"}, {"en": "want", "ja": "〜が欲しい"}, {"en": "have", "ja": "〜を持っている"}, {"en": "ball", "ja": "ボール"}, {"en": "some", "ja": "いくつかの、いくらかの"}, {"en": "pen", "ja": "ペン"}, {"en": "any", "ja": "（疑問文で）いくらかの"}, {"en": "need", "ja": "〜を必要とする"}, {"en": "dish", "ja": "皿"}, {"en": "evening", "ja": "夕方"}, {"en": "morning", "ja": "朝、午前"}, {"en": "afternoon", "ja": "午後"}, {"en": "photo", "ja": "写真"}, {"en": "of", "ja": "〜の"}, {"en": "welcome", "ja": "歓迎；ようこそ"}, {"en": "today", "ja": "今日（は）"}, {"en": "these", "ja": "これら（のもの）（人）"}, {"en": "they", "ja": "彼ら（彼女）らは（が）"}, {"en": "mexico", "ja": "メキシコ"}, {"en": "spanish", "ja": "スペイン語"}, {"en": "home", "ja": "自宅、家（動物の）生息地"}, {"en": "we", "ja": "私たちは（が）"}, {"en": "talk", "ja": "話す、話をする"}, {"en": "them", "ja": "彼（女）らを（に）、それらを（に）"}, {"en": "their", "ja": "彼（女）らの、それらの"}, {"en": "mexican", "ja": "メキシコの"}, {"en": "dress", "ja": "服、ドレス"}, {"en": "color", "ja": "色"}, {"en": "design", "ja": "設計、デザイン"}, {"en": "baseball", "ja": "野球"}, {"en": "player", "ja": "選手、競技者"}, {"en": "teammate", "ja": "チームメイト、チームの仲間"}, {"en": "singer", "ja": "歌手、歌う人"}, {"en": "those", "ja": "それらの（もの）、あれらは"}, {"en": "coat", "ja": "コート"}, {"en": "know", "ja": "〜を知っている"}, {"en": "him", "ja": "彼を（に）"}, {"en": "us", "ja": "私たちを（に）"}, {"en": "our", "ja": "私たちの"}, {"en": "its", "ja": "（it の所有格）"}, {"en": "the us", "ja": "アメリカ合衆国（the United States）"}, {"en": "parent", "ja": "親（父または母、parents で両親）"}, {"en": "work", "ja": "働く"}, {"en": "as", "ja": "〜として"}, {"en": "restaurant", "ja": "レストラン、食堂"}, {"en": "roll", "ja": "巻いたもの"}]}, {"key": "l3ex", "label": "Lesson 3続き", "words": [{"en": "seaweed", "ja": "海藻"}, {"en": "up", "ja": "上へ、上に"}, {"en": "roll up", "ja": "〜を巻く"}, {"en": "inside", "ja": "〜の中に"}, {"en": "rice", "ja": "米、ごはん"}, {"en": "put", "ja": "〜を置く、入れる"}, {"en": "avocado", "ja": "アボカド"}, {"en": "crab", "ja": "カニ"}, {"en": "meat", "ja": "食用の肉"}, {"en": "interesting", "ja": "おもしろい"}, {"en": "serve", "ja": "食事を出す"}, {"en": "hero", "ja": "英雄、ヒーロー"}, {"en": "boss", "ja": "上司、社長"}, {"en": "famous", "ja": "有名な"}, {"en": "dear", "ja": "〈手紙〉〜へ"}, {"en": "interview", "ja": "面接、インタビュー"}, {"en": "healthy", "ja": "健康によい"}, {"en": "a lot", "ja": "たくさんのこと"}, {"en": "another", "ja": "もう1つの"}, {"en": "california", "ja": "カリフォルニア州"}, {"en": "best", "ja": "最もよい"}, {"en": "regard", "ja": "敬意"}, {"en": "club", "ja": "クラブ、部活"}, {"en": "badminton", "ja": "バドミントン"}, {"en": "volleyball", "ja": "バレーボール"}, {"en": "table tennis", "ja": "卓球"}, {"en": "track and field", "ja": "陸上競技"}, {"en": "music", "ja": "音楽"}, {"en": "art", "ja": "美術、芸術"}, {"en": "social studies", "ja": "社会（授業）"}]}, {"key": "l4", "label": "Lesson 4", "words": [{"en": "get", "ja": "〜を買う、得る"}, {"en": "supermarket", "ja": "スーパーマーケット"}, {"en": "get up", "ja": "起きる"}, {"en": "get on", "ja": "〜に乗る"}, {"en": "get off", "ja": "〜から降りる"}, {"en": "off", "ja": "降りて"}, {"en": "get to", "ja": "〜に到着する"}, {"en": "active", "ja": "活動的な"}, {"en": "sport", "ja": "スポーツ"}, {"en": "live", "ja": "住む"}, {"en": "miss", "ja": "〜がいなくて寂しい"}, {"en": "cooking", "ja": "料理すること"}, {"en": "taco", "ja": "タコス"}, {"en": "go", "ja": "行く"}, {"en": "library", "ja": "図書館"}, {"en": "program", "ja": "番組、プログラム"}, {"en": "learn", "ja": "〜を習う、学ぶ"}, {"en": "word", "ja": "言葉、単語"}, {"en": "pass", "ja": "通る、通過する"}, {"en": "wash", "ja": "〜を洗う"}, {"en": "teach", "ja": "〜を教える"}, {"en": "cry", "ja": "泣く"}, {"en": "try", "ja": "〜を試す、やってみる"}, {"en": "fly", "ja": "飛ぶ"}, {"en": "has", "ja": "haveの3人称単数"}, {"en": "look", "ja": "見る"}, {"en": "look at", "ja": "〜を見る"}, {"en": "video", "ja": "ビデオ、動画"}, {"en": "does", "ja": "doの3人称単数"}, {"en": "send", "ja": "〜を送る"}, {"en": "take", "ja": "〈写真〉を撮る"}, {"en": "sometimes", "ja": "時々"}, {"en": "make", "ja": "〜を作る"}, {"en": "video call", "ja": "テレビ電話"}, {"en": "listen", "ja": "聞く"}, {"en": "listen to", "ja": "〜を聞く"}, {"en": "video game", "ja": "テレビゲーム"}, {"en": "chinese", "ja": "中国の、中国人"}, {"en": "recipe", "ja": "レシピ、調理法"}, {"en": "always", "ja": "いつも"}, {"en": "drink", "ja": "〜を飲む"}, {"en": "breakfast", "ja": "朝食"}, {"en": "usually", "ja": "たいてい"}, {"en": "by", "ja": "〜で（交通手段）"}, {"en": "never", "ja": "一度も〜ない"}, {"en": "eat", "ja": "〜を食べる"}, {"en": "when", "ja": "いつ"}, {"en": "where", "ja": "どこに"}, {"en": "near", "ja": "〜の近くに"}, {"en": "together", "ja": "一緒に"}, {"en": "room", "ja": "部屋"}, {"en": "floor", "ja": "階、床"}, {"en": "table", "ja": "テーブル"}, {"en": "wall", "ja": "壁"}, {"en": "kitchen", "ja": "台所"}, {"en": "asia", "ja": "アジア"}, {"en": "under", "ja": "〜の下に"}, {"en": "sea", "ja": "海"}, {"en": "school festival", "ja": "文化祭"}, {"en": "vacation", "ja": "休み、休暇"}, {"en": "end", "ja": "終わる"}, {"en": "noon", "ja": "正午"}, {"en": "at noon", "ja": "正午に"}, {"en": "christmas", "ja": "クリスマス"}, {"en": "before", "ja": "〜の前に"}, {"en": "dinner", "ja": "夕食"}, {"en": "national", "ja": "国立の"}, {"en": "a lot of", "ja": "たくさんの〜"}, {"en": "animal", "ja": "動物"}, {"en": "elephant", "ja": "ゾウ"}, {"en": "area", "ja": "地域、エリア"}, {"en": "baby", "ja": "赤ちゃん"}, {"en": "walk", "ja": "歩く"}, {"en": "slowly", "ja": "ゆっくりと"}, {"en": "cute", "ja": "かわいい"}, {"en": "bath", "ja": "入浴、風呂"}, {"en": "bathe", "ja": "入浴する"}, {"en": "lovely", "ja": "素晴らしい、かわいらしい"}, {"en": "come from", "ja": "〜出身の"}, {"en": "bamboo", "ja": "竹"}, {"en": "show", "ja": "〜を見せる"}, {"en": "leopard", "ja": "ヒョウ"}, {"en": "run", "ja": "走る"}, {"en": "fast", "ja": "速く"}, {"en": "marking", "ja": "斑紋、模様"}, {"en": "also", "ja": "…も、また"}, {"en": "tail", "ja": "尾、しっぽ"}, {"en": "spend", "ja": "〈時間〉を過ごす"}, {"en": "exciting", "ja": "わくわくする"}, {"en": "get home", "ja": "家に帰る"}, {"en": "take a bath", "ja": "入浴する"}, {"en": "shower", "ja": "シャワー"}, {"en": "go to bed", "ja": "寝る"}, {"en": "pet", "ja": "ペット"}, {"en": "hamster", "ja": "ハムスター"}, {"en": "bird", "ja": "鳥"}]}, {"key": "l5", "label": "Lesson 5", "words": [{"en": "headache", "ja": "頭痛"}, {"en": "have a good time", "ja": "楽しい時間を過ごす"}, {"en": "racket", "ja": "ラケット"}, {"en": "bench", "ja": "ベンチ"}, {"en": "mine", "ja": "私のもの"}, {"en": "whose", "ja": "誰の、誰のもの"}, {"en": "maybe", "ja": "たぶん"}, {"en": "case", "ja": "ケース、入れ物"}, {"en": "ruler", "ja": "定規"}, {"en": "yours", "ja": "あなたのもの"}, {"en": "stapler", "ja": "ホッチキス"}, {"en": "ours", "ja": "私たちのもの"}, {"en": "hers", "ja": "彼女のもの"}, {"en": "theirs", "ja": "彼らのもの"}, {"en": "hat", "ja": "帽子（つばあり）"}, {"en": "children", "ja": "子どもたち"}, {"en": "child", "ja": "子ども"}, {"en": "may", "ja": "〜してもよい"}, {"en": "help", "ja": "助ける"}, {"en": "dollar", "ja": "ドル"}, {"en": "size", "ja": "サイズ"}, {"en": "centimeter", "ja": "センチメートル"}, {"en": "feet", "ja": "フィートの複数形"}, {"en": "inch", "ja": "インチ"}, {"en": "fine", "ja": "十分な"}, {"en": "just", "ja": "ただ、ちょうど"}, {"en": "meter", "ja": "メートル"}, {"en": "river", "ja": "川"}, {"en": "kilometer", "ja": "キロメートル"}, {"en": "deep", "ja": "深い"}, {"en": "lake", "ja": "湖"}, {"en": "ticket", "ja": "チケット"}, {"en": "yard", "ja": "ヤード"}, {"en": "mile", "ja": "マイル"}, {"en": "yen", "ja": "円"}, {"en": "point", "ja": "ポイント、点"}, {"en": "which", "ja": "どちら、どれ"}, {"en": "pants", "ja": "ズボン"}, {"en": "shorts", "ja": "ショートパンツ"}, {"en": "sale", "ja": "販売、特売"}, {"en": "on sale", "ja": "特売中の"}, {"en": "wow", "ja": "うわあ"}, {"en": "deal", "ja": "取引"}, {"en": "different", "ja": "違う、さまざまな"}, {"en": "captain", "ja": "キャプテン"}, {"en": "team", "ja": "チーム"}, {"en": "cup", "ja": "カップ"}, {"en": "iced tea", "ja": "アイスティー"}, {"en": "subject", "ja": "教科、科目"}, {"en": "bali", "ja": "バリ（地名）"}, {"en": "island", "ja": "島"}, {"en": "indonesia", "ja": "インドネシア"}, {"en": "mountain", "ja": "山"}, {"en": "beach", "ja": "ビーチ"}, {"en": "god", "ja": "神"}, {"en": "most", "ja": "ほとんどの"}, {"en": "people", "ja": "人々"}, {"en": "custom", "ja": "習慣、風習"}, {"en": "touch", "ja": "〜に触れる"}, {"en": "other", "ja": "他の"}, {"en": "left", "ja": "左の"}, {"en": "life", "ja": "生活、人生"}, {"en": "hindu", "ja": "ヒンドゥー教の"}, {"en": "be different from", "ja": "〜と異なっている"}, {"en": "want to", "ja": "〜したい"}, {"en": "visit", "ja": "〜を訪問する"}, {"en": "someday", "ja": "いつか"}, {"en": "place", "ja": "場所、所"}, {"en": "religious", "ja": "宗教の"}, {"en": "dance", "ja": "踊り"}, {"en": "like", "ja": "〜のような"}, {"en": "story", "ja": "話、物語"}, {"en": "battle", "ja": "戦い、戦闘"}, {"en": "between", "ja": "〜の間に"}, {"en": "witch", "ja": "魔女"}, {"en": "cap", "ja": "つばのない帽子"}, {"en": "change", "ja": "つり銭、おつり"}, {"en": "cent", "ja": "セント"}, {"en": "shirt", "ja": "シャツ"}, {"en": "jeans", "ja": "ジーンズ"}, {"en": "skirt", "ja": "スカート"}, {"en": "sock", "ja": "靴下"}, {"en": "shoe", "ja": "靴"}]}, {"key": "l6", "label": "Lesson 6", "words": [{"en": "shopping", "ja": "買い物"}, {"en": "mall", "ja": "ショッピングモール"}, {"en": "excuse", "ja": "許す"}, {"en": "street", "ja": "通り、道路"}, {"en": "straight", "ja": "まっすぐに"}, {"en": "along", "ja": "〜に沿って"}, {"en": "block", "ja": "区画、ブロック"}, {"en": "turn", "ja": "曲がる"}, {"en": "corner", "ja": "角、曲がり角"}, {"en": "problem", "ja": "問題"}, {"en": "open", "ja": "〜を開ける"}, {"en": "use", "ja": "〜を使う"}, {"en": "towel", "ja": "タオル"}, {"en": "plate", "ja": "皿、平皿"}, {"en": "seat", "ja": "席、座席"}, {"en": "again", "ja": "もう1度、再び"}, {"en": "sure", "ja": "もちろん"}, {"en": "all", "ja": "全部の、すべて"}, {"en": "sorry", "ja": "ごめんなさい"}, {"en": "museum", "ja": "博物館"}, {"en": "ready", "ja": "準備ができて"}, {"en": "order", "ja": "注文する"}, {"en": "roast", "ja": "焼いた"}, {"en": "beef", "ja": "牛肉"}, {"en": "cream", "ja": "クリーム"}, {"en": "pasta", "ja": "パスタ"}, {"en": "would", "ja": "〜したい（丁寧形）"}, {"en": "read", "ja": "〜を読む"}, {"en": "italian", "ja": "イタリアの"}, {"en": "can", "ja": "〜できる"}, {"en": "chocolate", "ja": "チョコレート"}, {"en": "love", "ja": "〜を愛する、大好きだ"}, {"en": "write", "ja": "〜を書く"}, {"en": "song", "ja": "歌"}, {"en": "sing", "ja": "歌う"}, {"en": "band", "ja": "バンド、楽団"}, {"en": "swim", "ja": "泳ぐ"}, {"en": "cannot", "ja": "canの否定形"}, {"en": "pool", "ja": "プール"}, {"en": "bread", "ja": "パン"}, {"en": "salad", "ja": "サラダ"}, {"en": "weekend", "ja": "週末"}, {"en": "be", "ja": "am, are, isの原形"}, {"en": "careful", "ja": "注意深い"}, {"en": "olive", "ja": "オリーブ"}, {"en": "oil", "ja": "油、オイル"}, {"en": "finish", "ja": "〜を終える"}, {"en": "worry", "ja": "心配する"}, {"en": "bring", "ja": "〜を持ってくる"}, {"en": "later", "ja": "あとで"}, {"en": "ski", "ja": "スキーをする"}, {"en": "skate", "ja": "スケートをする"}, {"en": "post office", "ja": "郵便局"}, {"en": "everybody", "ja": "みんな"}, {"en": "noisy", "ja": "騒がしい"}, {"en": "late", "ja": "遅い、遅れて"}, {"en": "meeting", "ja": "ミーティング"}, {"en": "interviewer", "ja": "面接官"}, {"en": "international", "ja": "国際的な"}, {"en": "central", "ja": "中央の"}, {"en": "junior high school", "ja": "中学校"}, {"en": "clean", "ja": "〜をきれいにする"}, {"en": "babysit", "ja": "子守りをする"}, {"en": "else", "ja": "他に"}, {"en": "pick", "ja": "〜を選ぶ"}, {"en": "pick up", "ja": "〜を拾い上げる"}, {"en": "musical", "ja": "音楽の"}, {"en": "instrument", "ja": "楽器"}, {"en": "member", "ja": "一員、メンバー"}, {"en": "orchestra", "ja": "オーケストラ"}, {"en": "nursing home", "ja": "老人ホーム"}, {"en": "director", "ja": "監督、施設長"}, {"en": "entrance", "ja": "入口"}, {"en": "talk to", "ja": "〜に話しかける"}, {"en": "elderly", "ja": "年配の"}, {"en": "sit", "ja": "座る"}, {"en": "department store", "ja": "デパート"}, {"en": "city", "ja": "都市、市"}, {"en": "bank", "ja": "銀行"}, {"en": "hospital", "ja": "病院"}]}, {"key": "l7", "label": "Lesson 7", "words": [{"en": "note", "ja": "メモ、ノート"}, {"en": "medicine", "ja": "薬"}, {"en": "join", "ja": "〜に参加する"}, {"en": "right now", "ja": "ちょうど今"}, {"en": "court", "ja": "コート"}, {"en": "soon", "ja": "まもなく"}, {"en": "hold", "ja": "〜を保留にする"}, {"en": "out", "ja": "外出して"}, {"en": "message", "ja": "伝言、メッセージ"}, {"en": "sleep", "ja": "眠る"}, {"en": "living room", "ja": "居間"}, {"en": "cake", "ja": "ケーキ"}, {"en": "lie", "ja": "横になる"}, {"en": "sofa", "ja": "ソファー"}, {"en": "laugh", "ja": "笑う"}, {"en": "give", "ja": "〜を与える"}, {"en": "cut", "ja": "〜を切る"}, {"en": "die", "ja": "死ぬ"}, {"en": "break", "ja": "（短い）休憩"}, {"en": "wait", "ja": "待つ"}, {"en": "buy", "ja": "〜を買う"}, {"en": "cold", "ja": "寒い、冷たい"}, {"en": "snack", "ja": "軽食"}, {"en": "store", "ja": "店"}, {"en": "then", "ja": "それでは、そのとき"}, {"en": "online", "ja": "オンラインで"}, {"en": "tablet", "ja": "タブレット（PC）"}, {"en": "homework", "ja": "宿題"}, {"en": "smell", "ja": "〜のにおいがする"}, {"en": "outside", "ja": "外に"}, {"en": "look for", "ja": "〜を探す"}, {"en": "loudly", "ja": "大声で"}, {"en": "weather", "ja": "天気"}, {"en": "yeah", "ja": "うん、そうだね"}, {"en": "barley tea", "ja": "麦茶"}, {"en": "rule", "ja": "規則、ルール"}, {"en": "belong to", "ja": "〜に所属する"}, {"en": "idea", "ja": "考え、アイデア"}, {"en": "wrong", "ja": "間違っている"}, {"en": "number", "ja": "番号、数字"}, {"en": "report", "ja": "レポート"}, {"en": "clown", "ja": "ピエロ"}, {"en": "circus", "ja": "サーカス"}, {"en": "volunteer", "ja": "ボランティア"}, {"en": "difference", "ja": "違い、差異"}, {"en": "fun", "ja": "楽しい"}, {"en": "sick", "ja": "病気の"}, {"en": "be in the hospital", "ja": "入院している"}, {"en": "away", "ja": "離れて"}, {"en": "lonely", "ja": "孤独な"}, {"en": "worry about", "ja": "〜を心配する"}, {"en": "around", "ja": "〜の周りを"}, {"en": "world", "ja": "世界"}, {"en": "laughter", "ja": "笑い"}, {"en": "bedroom", "ja": "寝室"}, {"en": "bathroom", "ja": "浴室"}, {"en": "dining room", "ja": "食堂"}, {"en": "brush", "ja": "〜をみがく"}, {"en": "teeth", "ja": "歯の複数形"}, {"en": "tooth", "ja": "歯"}, {"en": "water", "ja": "〜に水をやる"}, {"en": "plant", "ja": "植物"}]}, {"key": "l8", "label": "Lesson 8", "words": [{"en": "front", "ja": "前、正面"}, {"en": "in front of", "ja": "〜の正面に"}, {"en": "arrive", "ja": "到着する"}, {"en": "early", "ja": "早く、早い"}, {"en": "south", "ja": "南、南部"}, {"en": "culture", "ja": "文化"}, {"en": "country", "ja": "国"}, {"en": "ask", "ja": "〜にたずねる"}, {"en": "answer", "ja": "答える"}, {"en": "last", "ja": "この前の、最後の"}, {"en": "ago", "ja": "〜前に"}, {"en": "exam", "ja": "試験"}, {"en": "yesterday", "ja": "昨日"}, {"en": "drop", "ja": "落とす"}, {"en": "carry", "ja": "〜を運ぶ"}, {"en": "stop", "ja": "止まる"}, {"en": "plan", "ja": "〜を計画する"}, {"en": "the day before yesterday", "ja": "おととい"}, {"en": "month", "ja": "月、1ヶ月"}, {"en": "did", "ja": "doの過去形"}, {"en": "anime", "ja": "アニメ"}, {"en": "sound", "ja": "〜に聞こえる"}, {"en": "move", "ja": "〜を動かす"}, {"en": "pc", "ja": "パソコン"}, {"en": "setting", "ja": "設定"}, {"en": "smartphone", "ja": "スマートフォン"}, {"en": "back", "ja": "戻って"}, {"en": "travel", "ja": "旅行する"}, {"en": "however", "ja": "しかしながら"}, {"en": "say", "ja": "〜を言う"}, {"en": "took", "ja": "takeの過去形"}, {"en": "take out", "ja": "〜を取り出す"}, {"en": "ate", "ja": "eatの過去形"}, {"en": "finally", "ja": "ついに"}, {"en": "knew", "ja": "knowの過去形"}, {"en": "went", "ja": "goの過去形"}, {"en": "left", "ja": "leaveの過去形"}, {"en": "leave", "ja": "〜を出発する"}, {"en": "hotel", "ja": "ホテル"}, {"en": "airport", "ja": "空港"}, {"en": "saw", "ja": "seeの過去形"}, {"en": "actor", "ja": "俳優"}, {"en": "plane", "ja": "飛行機"}, {"en": "begin", "ja": "〜を始める"}, {"en": "forget", "ja": "〜を忘れる"}, {"en": "hear", "ja": "〜が聞こえる"}, {"en": "lose", "ja": "〜をなくす"}, {"en": "sell", "ja": "〜を売る"}, {"en": "tell", "ja": "〜に伝える"}, {"en": "comic", "ja": "漫画"}, {"en": "coffee", "ja": "コーヒー"}, {"en": "drank", "ja": "drinkの過去形"}, {"en": "alaska", "ja": "アラスカ"}, {"en": "journey", "ja": "旅行、旅程"}, {"en": "half", "ja": "半分"}, {"en": "hour", "ja": "1時間"}, {"en": "own", "ja": "自分自身の"}, {"en": "public", "ja": "公共の"}, {"en": "tour", "ja": "ツアー、観光"}, {"en": "bear", "ja": "クマ"}, {"en": "brown bear", "ja": "ヒグマ"}, {"en": "wolf", "ja": "オオカミ"}, {"en": "wolves", "ja": "wolfの複数形"}, {"en": "wild", "ja": "野生の"}, {"en": "safely", "ja": "安全に"}, {"en": "aurora", "ja": "オーロラ"}, {"en": "during", "ja": "〜の間（ずっと）"}, {"en": "trip", "ja": "旅行"}, {"en": "greeting", "ja": "あいさつ"}, {"en": "letter", "ja": "手紙"}, {"en": "camp", "ja": "キャンプをする"}, {"en": "close", "ja": "近くに"}, {"en": "pay", "ja": "〜を払う"}, {"en": "attention", "ja": "注意"}, {"en": "appear", "ja": "現れる"}, {"en": "a little", "ja": "少し"}, {"en": "sad", "ja": "悲しい"}, {"en": "enjoy", "ja": "〜を楽しむ"}, {"en": "grandma", "ja": "おばあちゃん"}, {"en": "attend", "ja": "〜に出席する"}, {"en": "concert", "ja": "コンサート"}, {"en": "tomorrow", "ja": "明日"}, {"en": "game", "ja": "ゲーム、試合"}, {"en": "bowl", "ja": "ボウリングをする"}, {"en": "cycle", "ja": "自転車に乗る"}, {"en": "amusement park", "ja": "遊園地"}]}, {"key": "l9", "label": "Lesson 9", "words": [{"en": "happy", "ja": "幸せな"}, {"en": "angry", "ja": "怒っている"}, {"en": "thirsty", "ja": "のどが渇いている"}, {"en": "tired", "ja": "疲れた"}, {"en": "scared", "ja": "怖がっている"}, {"en": "were", "ja": "beの過去形（複数）"}, {"en": "absent", "ja": "欠席している"}, {"en": "be absent from", "ja": "〜を欠席している"}, {"en": "was", "ja": "beの過去形（単数）"}, {"en": "fever", "ja": "熱"}, {"en": "chicken", "ja": "チキン"}, {"en": "gym", "ja": "体育館"}, {"en": "at that time", "ja": "そのとき"}, {"en": "music room", "ja": "音楽室"}, {"en": "blackout", "ja": "停電"}, {"en": "scream", "ja": "悲鳴（をあげる）"}, {"en": "catch", "ja": "キャッチする"}, {"en": "drama", "ja": "ドラマ、劇"}, {"en": "lesson", "ja": "授業、レッスン"}, {"en": "sunny", "ja": "晴れた"}, {"en": "quite", "ja": "非常に"}, {"en": "cool", "ja": "涼しい、かっこいい"}, {"en": "far", "ja": "遠い"}, {"en": "studio", "ja": "スタジオ"}, {"en": "minute", "ja": "分（時間）"}, {"en": "date", "ja": "日付"}, {"en": "cloudy", "ja": "くもった"}, {"en": "rain", "ja": "雨が降る"}, {"en": "dark", "ja": "暗い"}, {"en": "rainy", "ja": "雨の多い"}, {"en": "snowy", "ja": "雪の多い"}, {"en": "snow", "ja": "雪が降る"}, {"en": "windy", "ja": "風の強い"}, {"en": "important", "ja": "大切な、重要な"}, {"en": "make a difference", "ja": "変化をもたらす"}, {"en": "cancer", "ja": "がん"}, {"en": "brave", "ja": "勇敢な"}, {"en": "spent", "ja": "spendの過去形"}, {"en": "even", "ja": "〜でさえ"}, {"en": "age", "ja": "年齢、年"}, {"en": "thought", "ja": "thinkの過去形"}, {"en": "think", "ja": "〜を考える"}, {"en": "research", "ja": "研究、調査"}, {"en": "money", "ja": "お金"}, {"en": "only", "ja": "ただ〜のみ"}, {"en": "lemonade", "ja": "レモネード"}, {"en": "shop", "ja": "店"}, {"en": "neighbor", "ja": "近所の人"}, {"en": "at first", "ja": "最初は"}, {"en": "on tv", "ja": "テレビで"}, {"en": "all over the world", "ja": "世界中で"}, {"en": "million", "ja": "100万"}, {"en": "hawaii", "ja": "ハワイ"}, {"en": "warm", "ja": "暖かい"}]}, {"key": "l10", "label": "Lesson 10", "words": [{"en": "photograph", "ja": "写真"}, {"en": "be going to", "ja": "〜するつもりだ"}, {"en": "popular", "ja": "人気のある"}, {"en": "quick", "ja": "素早い"}, {"en": "meal", "ja": "食事"}, {"en": "onion", "ja": "タマネギ"}, {"en": "seasoning", "ja": "調味料"}, {"en": "sake", "ja": "日本酒"}, {"en": "soy sauce", "ja": "しょうゆ"}, {"en": "the day after tomorrow", "ja": "あさって"}, {"en": "tonight", "ja": "今夜"}, {"en": "stay", "ja": "滞在する"}, {"en": "climb", "ja": "〜に登る"}, {"en": "ounce", "ja": "オンス"}, {"en": "tablespoon", "ja": "大さじ"}, {"en": "sugar", "ja": "砂糖"}, {"en": "boil", "ja": "〜を煮る"}, {"en": "add", "ja": "〜を加える"}, {"en": "why", "ja": "なぜ"}, {"en": "because", "ja": "なぜなら〜だから"}, {"en": "thin", "ja": "薄い"}, {"en": "slice", "ja": "薄切り一枚"}, {"en": "such", "ja": "そのような"}, {"en": "suitcase", "ja": "スーツケース"}, {"en": "holiday", "ja": "休日、休暇"}, {"en": "twice", "ja": "2回、2度"}, {"en": "once", "ja": "1回"}, {"en": "free", "ja": "暇な、自由な"}, {"en": "will", "ja": "〜するつもり"}, {"en": "forward", "ja": "前へ"}, {"en": "look forward to", "ja": "〜を楽しみにする"}, {"en": "ring", "ja": "鳴る、指輪"}, {"en": "borrow", "ja": "〜を借りる"}, {"en": "course", "ja": "コース"}, {"en": "certainly", "ja": "もちろん"}, {"en": "turn off", "ja": "〜を消す"}, {"en": "heat", "ja": "熱"}, {"en": "tough", "ja": "難しい"}, {"en": "a kind of", "ja": "〜の一種"}, {"en": "ginger", "ja": "ショウガ"}, {"en": "spicy", "ja": "辛い"}, {"en": "raw", "ja": "生の"}, {"en": "fried egg", "ja": "目玉焼き"}, {"en": "come in", "ja": "入る"}, {"en": "must", "ja": "〜しなければならない"}, {"en": "take off", "ja": "〜を脱ぐ"}, {"en": "true", "ja": "本当の"}, {"en": "cell phone", "ja": "携帯電話"}, {"en": "plastic", "ja": "プラスチックの"}, {"en": "bottle", "ja": "ボトル、瓶"}, {"en": "recycle", "ja": "〜をリサイクルする"}, {"en": "throw", "ja": "〜を投げる"}, {"en": "reduce", "ja": "〜を減らす"}, {"en": "waste", "ja": "ごみ、廃棄物"}, {"en": "presentation", "ja": "プレゼンテーション"}, {"en": "found", "ja": "findの過去形"}, {"en": "find", "ja": "〜を見つける"}, {"en": "article", "ja": "記事"}, {"en": "internet", "ja": "インターネット"}, {"en": "bubble", "ja": "泡"}, {"en": "college", "ja": "大学"}, {"en": "instead", "ja": "その代わりに"}, {"en": "instead of", "ja": "〜の代わりに"}, {"en": "amount", "ja": "量"}, {"en": "marathon", "ja": "マラソン"}, {"en": "environment", "ja": "環境"}, {"en": "check", "ja": "〜を確認する"}, {"en": "easily", "ja": "簡単に"}, {"en": "ceremony", "ja": "式典"}, {"en": "field trip", "ja": "校外学習"}, {"en": "excursion", "ja": "遠足"}, {"en": "chorus", "ja": "合唱（部）"}, {"en": "contest", "ja": "コンテスト"}, {"en": "graduation", "ja": "卒業（式）"}]}, {"key": "l11", "label": "Lesson 11", "words": [{"en": "natural", "ja": "自然の"}, {"en": "history", "ja": "歴史"}, {"en": "lots of", "ja": "たくさんの〜"}, {"en": "town", "ja": "町"}, {"en": "tiger", "ja": "トラ"}, {"en": "shopping mall", "ja": "ショッピングモール"}, {"en": "tourist", "ja": "旅行者、観光客"}, {"en": "center", "ja": "中心、中央"}, {"en": "church", "ja": "教会"}, {"en": "next to", "ja": "〜のとなりに"}, {"en": "behind", "ja": "〜の後ろに"}, {"en": "bridge", "ja": "橋"}, {"en": "cherry", "ja": "サクランボ"}, {"en": "african", "ja": "アフリカの"}, {"en": "penguin", "ja": "ペンギン"}, {"en": "africa", "ja": "アフリカ"}, {"en": "south africa", "ja": "南アフリカ"}, {"en": "actually", "ja": "実際は"}, {"en": "example", "ja": "例"}, {"en": "traffic light", "ja": "交通信号"}, {"en": "road", "ja": "道路"}, {"en": "a few", "ja": "少しある"}, {"en": "paper", "ja": "紙"}, {"en": "news", "ja": "ニュース"}, {"en": "gift", "ja": "贈り物"}, {"en": "glass", "ja": "コップ、グラス"}, {"en": "juice", "ja": "ジュース"}, {"en": "sheet", "ja": "1枚"}, {"en": "piece", "ja": "一つ、一個"}, {"en": "a piece of", "ja": "〜ひとつ"}, {"en": "pot", "ja": "鍋、壺"}, {"en": "cambodia", "ja": "カンボジア"}, {"en": "collect", "ja": "〜を集める"}, {"en": "reusable", "ja": "再利用可能な"}, {"en": "garbage", "ja": "ごみ"}, {"en": "dream", "ja": "夢"}, {"en": "future", "ja": "将来、未来"}, {"en": "ghana", "ja": "ガーナ"}, {"en": "cacao", "ja": "カカオ"}, {"en": "farm", "ja": "農場"}, {"en": "globally", "ja": "地球規模で"}, {"en": "according to", "ja": "〜によると"}, {"en": "poor", "ja": "貧しい"}, {"en": "live on", "ja": "〜を食べて生きる"}, {"en": "poverty", "ja": "貧困"}, {"en": "lack", "ja": "不足"}, {"en": "education", "ja": "教育"}, {"en": "destruction", "ja": "破壊"}, {"en": "action", "ja": "行動"}, {"en": "resolve", "ja": "〜を解決する"}, {"en": "little by little", "ja": "少しずつ"}, {"en": "bakery", "ja": "パン屋"}, {"en": "drugstore", "ja": "ドラッグストア"}, {"en": "fire station", "ja": "消防署"}, {"en": "movie theater", "ja": "映画館"}, {"en": "barbershop", "ja": "理髪店"}, {"en": "gas station", "ja": "ガソリンスタンド"}, {"en": "fridge", "ja": "冷蔵庫"}, {"en": "hamburger", "ja": "ハンバーガー"}, {"en": "pizza", "ja": "ピザ"}, {"en": "hot dog", "ja": "ホットドッグ"}, {"en": "french fries", "ja": "フライドポテト"}, {"en": "ice cream", "ja": "アイスクリーム"}]}, {"key": "l12", "label": "Lesson 12", "words": [{"en": "cheap", "ja": "安い"}, {"en": "expensive", "ja": "高価な"}, {"en": "light", "ja": "軽い"}, {"en": "heavy", "ja": "重い"}, {"en": "difficult", "ja": "難しい"}, {"en": "easy", "ja": "簡単な"}, {"en": "wet", "ja": "濡れた"}, {"en": "dry", "ja": "乾いた"}, {"en": "rainforest", "ja": "熱帯雨林"}, {"en": "aquarium", "ja": "水族館"}, {"en": "real", "ja": "本物の"}, {"en": "south america", "ja": "南アメリカ"}, {"en": "colorful", "ja": "色とりどりの"}, {"en": "butterfly", "ja": "チョウ"}, {"en": "bicycle", "ja": "自転車"}, {"en": "brazil", "ja": "ブラジル"}, {"en": "snake", "ja": "ヘビ"}, {"en": "frog", "ja": "カエル"}, {"en": "more", "ja": "もっと"}, {"en": "than", "ja": "〜より"}, {"en": "strong", "ja": "強い"}, {"en": "poison", "ja": "毒"}, {"en": "section", "ja": "区画、部門"}, {"en": "dangerous", "ja": "危険な"}, {"en": "be afraid of", "ja": "〜を怖がる"}, {"en": "large", "ja": "大きい、広い"}, {"en": "useful", "ja": "役に立つ"}, {"en": "exhibit", "ja": "展示（品）"}, {"en": "planetarium", "ja": "プラネタリウム"}, {"en": "carefully", "ja": "注意深く"}, {"en": "better", "ja": "よりよい"}, {"en": "score", "ja": "得点、成績"}, {"en": "worst", "ja": "最もひどい"}, {"en": "ill", "ja": "病気の"}, {"en": "badly", "ja": "ひどく"}, {"en": "worse", "ja": "より悪い"}, {"en": "less", "ja": "より少ない"}, {"en": "least", "ja": "最も少ない"}, {"en": "each", "ja": "それぞれの"}, {"en": "alligator", "ja": "アリゲーター"}, {"en": "especially", "ja": "特に"}, {"en": "interested", "ja": "興味がある"}, {"en": "sign", "ja": "標識、看板"}, {"en": "language", "ja": "言語"}, {"en": "india", "ja": "インド"}, {"en": "indian", "ja": "インドの"}, {"en": "sincerely", "ja": "敬具"}, {"en": "reply", "ja": "返事、返信"}, {"en": "hindi", "ja": "ヒンディー語"}, {"en": "main", "ja": "主な"}, {"en": "billion", "ja": "10億"}, {"en": "state", "ja": "州"}, {"en": "ethnic", "ja": "民族の"}, {"en": "group", "ja": "グループ、集団"}, {"en": "more than", "ja": "〜より多い"}, {"en": "same", "ja": "同じ"}, {"en": "bank note", "ja": "紙幣"}, {"en": "local", "ja": "地元の"}, {"en": "both", "ja": "両方の"}, {"en": "care", "ja": "気にかける"}, {"en": "banana", "ja": "バナナ"}, {"en": "strawberry", "ja": "イチゴ"}, {"en": "grape", "ja": "ブドウ"}, {"en": "peach", "ja": "桃"}, {"en": "pear", "ja": "梨"}, {"en": "pineapple", "ja": "パイナップル"}, {"en": "sweater", "ja": "セーター"}, {"en": "thick", "ja": "厚い、太い"}]}];
+const LESSON_SENTENCES = [{"key": "s_lesson1", "label": "Lesson 1", "sentences": [{"display": "I am Mary.", "typable": "i am mary", "ja": "私はメアリーです。"}, {"display": "My name is Mary Smith.", "typable": "my name is mary smith", "ja": "私の名前はメアリー・スミスです。"}, {"display": "I'm from Canada.", "typable": "im from canada", "ja": "私はカナダ出身です。"}, {"display": "You are Tom.", "typable": "you are tom", "ja": "あなたはトムです。"}, {"display": "I am not Mary.", "typable": "i am not mary", "ja": "私はメアリーではありません。"}, {"display": "You are not from Canada.", "typable": "you are not from canada", "ja": "あなたはカナダ出身ではありません。"}, {"display": "Are you from Australia?", "typable": "are you from australia", "ja": "あなたはオーストラリア出身ですか？"}, {"display": "This is Lisa.", "typable": "this is lisa", "ja": "こちらはリサです。"}, {"display": "This is my textbook.", "typable": "this is my textbook", "ja": "これは私の教科書です。"}, {"display": "That is your locker.", "typable": "that is your locker", "ja": "あれはあなたのロッカーです。"}, {"display": "This isn't Mary's notebook.", "typable": "this isnt marys notebook", "ja": "これはメアリーのノートではありません。"}, {"display": "That is not my bag.", "typable": "that is not my bag", "ja": "あれは私のかばんではありません。"}, {"display": "Is this Tom's desk? — Yes, it is. / No, it isn't.", "typable": "is this toms desk yes it is no it isnt", "ja": "これはトムの机ですか？\n— はい、そうです。/ いいえ、違います。"}, {"display": "Is that your bike? — No, it isn't. It's my sister's.", "typable": "is that your bike no it isnt its my sisters", "ja": "あれはあなたの自転車ですか？\n— いいえ。それは姉（妹）のものです。"}]}, {"key": "s_lesson2", "label": "Lesson 2", "sentences": [{"display": "This is Amy. She is my classmate.", "typable": "this is amy she is my classmate", "ja": "こちらはエイミーです。彼女は私のクラスメートです。"}, {"display": "That is Mr. Jones. He is my teacher.", "typable": "that is mr jones he is my teacher", "ja": "あちらはジョーンズさんです。彼は私の先生です。"}, {"display": "She isn't my English teacher.", "typable": "she isnt my english teacher", "ja": "彼女は私の英語の先生ではありません。"}, {"display": "Is he your friend? — Yes, he is. / No, he isn't.", "typable": "is he your friend yes he is no he isnt", "ja": "彼はあなたの友達ですか？\n— はい、そうです。/ いいえ、違います。"}, {"display": "Is she Ken's sister? — Yes, she is. / No, she isn't.", "typable": "is she kens sister yes she is no she isnt", "ja": "彼女はケンの姉（妹）ですか？\n— はい、そうです。/ いいえ、違います。"}, {"display": "Is he Mr. Brown? — No, he isn't. He is Mr. Smith.", "typable": "is he mr brown no he isnt he is mr smith", "ja": "彼はブラウンさんですか？\n— いいえ。彼はスミスさんです。"}, {"display": "What's this? — It is a radish.", "typable": "whats this it is a radish", "ja": "これは何ですか？— ダイコンです。"}, {"display": "What's that? — It's an eggplant.", "typable": "whats that its an eggplant", "ja": "あれは何ですか？— ナスです。"}, {"display": "Tom is tall.", "typable": "tom is tall", "ja": "トムは背が高いです。"}, {"display": "Tom is a tall boy.", "typable": "tom is a tall boy", "ja": "トムは背が高い男の子です。"}, {"display": "This is a big school.", "typable": "this is a big school", "ja": "これは大きな学校です。"}, {"display": "This school is big.", "typable": "this school is big", "ja": "この学校は大きいです。"}, {"display": "That is an old temple.", "typable": "that is an old temple", "ja": "あれは古いお寺です。"}, {"display": "That temple is old.", "typable": "that temple is old", "ja": "あのお寺は古いです。"}, {"display": "Who is that girl? — She is Karen.", "typable": "who is that girl she is karen", "ja": "あの女の子は誰ですか？"}, {"display": "Who's that man? — He's my uncle.", "typable": "whos that man hes my uncle", "ja": "あの男性は誰ですか？"}, {"display": "Is your house new or old? — It's new.", "typable": "is your house new or old its new", "ja": "あなたの家は新しいですか、古いですか？\n— 新しいです。"}, {"display": "Is this a fruit or a vegetable? — It's a vegetable.", "typable": "is this a fruit or a vegetable its a vegetable", "ja": "これは果物ですか、野菜ですか？\n— 野菜です。"}, {"display": "Is that lady a doctor or a nurse? — She is a doctor.", "typable": "is that lady a doctor or a nurse she is a doctor", "ja": "あの女性は医者ですか、看護師ですか？\n— 彼女は医者です。"}]}, {"key": "s_lesson3", "label": "Lesson 3", "sentences": [{"display": "I like tennis.", "typable": "i like tennis", "ja": "私はテニスが好きです。"}, {"display": "I practice tennis after school.", "typable": "i practice tennis after school", "ja": "私は放課後テニスを練習します。"}, {"display": "You play soccer well.", "typable": "you play soccer well", "ja": "あなたはサッカーが上手です。"}, {"display": "I don't speak Japanese at school.", "typable": "i dont speak japanese at school", "ja": "私は学校で日本語を話しません。"}, {"display": "Do you study English every day? — Yes, I do. / No, I don't.", "typable": "do you study english every day yes i do no i dont", "ja": "あなたは毎日英語を勉強しますか？\n— はい、勉強します。/ いいえ、しません。"}, {"display": "What do you have in your hand?", "typable": "what do you have in your hand", "ja": "あなたは手に何を持っていますか？"}, {"display": "What do you do after school?", "typable": "what do you do after school", "ja": "あなたは放課後何をしますか？"}, {"display": "I like books.", "typable": "i like books", "ja": "私は本が好きです。"}, {"display": "Do you have some pens? — No, I don't have any pens.", "typable": "do you have some pens no i dont have any pens", "ja": "あなたはペンをいくつか持っていますか？"}, {"display": "I need some pens.", "typable": "i need some pens", "ja": "私はペンがいくつか必要です。"}, {"display": "How many pens do you need?", "typable": "how many pens do you need", "ja": "あなたは何本ペンが必要ですか？"}, {"display": "I have a new book. This is the book.", "typable": "i have a new book this is the book", "ja": "私は新しい本を持っています。これがその本です。"}, {"display": "I play the piano in the evening.", "typable": "i play the piano in the evening", "ja": "私は夕方にピアノを弾きます。"}, {"display": "Karen and I are classmates. We are good friends.", "typable": "karen and i are classmates we are good friends", "ja": "カレンと私はクラスメートです。私たちは仲良しです。"}, {"display": "John and Bob play baseball. They are teammates.", "typable": "john and bob play baseball they are teammates", "ja": "ジョンとボブは野球をします。彼らはチームメートです。"}, {"display": "These are my brother's T-shirts.", "typable": "these are my brothers tshirts", "ja": "これらは私の兄（弟）のTシャツです。"}, {"display": "Those coats are old.", "typable": "those coats are old", "ja": "あれらのコートは古いです。"}, {"display": "That boy is John. Do you know him?", "typable": "that boy is john do you know him", "ja": "あの男の子はジョンです。あなたは彼を知っていますか？"}, {"display": "John and Bob play baseball with us after school.", "typable": "john and bob play baseball with us after school", "ja": "ジョンとボブは放課後私たちと野球をします。"}]}, {"key": "s_lesson4", "label": "Lesson 4", "sentences": [{"display": "Ken likes books.", "typable": "ken likes books", "ja": "ケンは本が好きです。"}, {"display": "He goes to the library after school.", "typable": "he goes to the library after school", "ja": "彼は放課後図書館へ行きます。"}, {"display": "Lisa studies English every day.", "typable": "lisa studies english every day", "ja": "リサは毎日英語を勉強します。"}, {"display": "She watches an English TV program in the morning.", "typable": "she watches an english tv program in the morning", "ja": "彼女は朝に英語のテレビ番組を見ます。"}, {"display": "She learns fifty English words every week.", "typable": "she learns fifty english words every week", "ja": "彼女は毎週英単語を50語覚えます。"}, {"display": "Mr. Smith has two cats.", "typable": "mr smith has two cats", "ja": "スミスさんはネコを2匹飼っています。"}, {"display": "My brother doesn't play video games.", "typable": "my brother doesnt play video games", "ja": "私の兄はテレビゲームをしません。"}, {"display": "Ken doesn't listen to music.", "typable": "ken doesnt listen to music", "ja": "ケンは音楽を聴きません。"}, {"display": "Does your mother cook Chinese food? — Yes, she does. / No, she doesn't.", "typable": "does your mother cook chinese food yes she does no she doesnt", "ja": "あなたのお母さんは中華料理を作りますか？\n— はい、作ります。/ いいえ、作りません。"}, {"display": "Does she have many recipe books? — Yes, she does. / No, she doesn't.", "typable": "does she have many recipe books yes she does no she doesnt", "ja": "彼女はレシピ本をたくさん持っていますか？\n— はい、持っています。/ いいえ、持っていません。"}, {"display": "I always drink milk for breakfast.", "typable": "i always drink milk for breakfast", "ja": "私はいつも朝食に牛乳を飲みます。"}, {"display": "My father usually goes to work by car.", "typable": "my father usually goes to work by car", "ja": "私の父はたいてい車で仕事に行きます。"}, {"display": "We sometimes go to Japanese restaurants.", "typable": "we sometimes go to japanese restaurants", "ja": "私たちは時々日本食レストランへ行きます。"}, {"display": "Janet never eats natto.", "typable": "janet never eats natto", "ja": "ジャネットは決して納豆を食べません。"}, {"display": "My mother is always busy in the morning.", "typable": "my mother is always busy in the morning", "ja": "私の母は朝いつも忙しいです。"}, {"display": "Where do you live?", "typable": "where do you live", "ja": "あなたはどこに住んでいますか？"}, {"display": "Where does this bus go?", "typable": "where does this bus go", "ja": "このバスはどこへ行きますか？"}, {"display": "Where is the teachers' room?", "typable": "where is the teachers room", "ja": "職員室はどこですか？"}, {"display": "Where are your classmates? — They are over there.", "typable": "where are your classmates they are over there", "ja": "あなたのクラスメートはどこにいますか？"}, {"display": "What time does your school start?", "typable": "what time does your school start", "ja": "あなたの学校は何時に始まりますか？"}, {"display": "When is your school festival?", "typable": "when is your school festival", "ja": "あなたの学校の文化祭はいつですか？"}, {"display": "When does the summer vacation end?", "typable": "when does the summer vacation end", "ja": "夏休みはいつ終わりますか？"}]}, {"key": "s_lesson5", "label": "Lesson 5", "sentences": [{"display": "This pencil case is mine.", "typable": "this pencil case is mine", "ja": "この筆箱は私のものです。"}, {"display": "Is that ruler yours?", "typable": "is that ruler yours", "ja": "あの定規はあなたのものですか？"}, {"display": "These staplers are not ours.", "typable": "these staplers are not ours", "ja": "これらのホッチキスは私たちのものではありません。"}, {"display": "This hat is Mary's.", "typable": "this hat is marys", "ja": "この帽子はメアリーのものです。"}, {"display": "That coat is not my brother's. It's my mother's.", "typable": "that coat is not my brothers its my mothers", "ja": "あのコートは私の兄のものではありません。母のものです。"}, {"display": "These T-shirts are my brothers'.", "typable": "these tshirts are my brothers", "ja": "これらのTシャツは私の兄たちのものです。"}, {"display": "Whose umbrella is this? — It's mine.", "typable": "whose umbrella is this its mine", "ja": "これは誰の傘ですか？\n— それは私のものです。"}, {"display": "Whose are those umbrellas? — They are Ken's.", "typable": "whose are those umbrellas they are kens", "ja": "あれらは誰の傘ですか？\n— それらはケンのものです。"}, {"display": "How many brothers do you have?", "typable": "how many brothers do you have", "ja": "あなたは兄弟が何人いますか？"}, {"display": "How old is your brother?", "typable": "how old is your brother", "ja": "あなたのお兄さんは何歳ですか？"}, {"display": "How tall is your mother?", "typable": "how tall is your mother", "ja": "あなたのお母さんの身長はどのくらいですか？"}, {"display": "How high is Mt. Fuji?", "typable": "how high is mt fuji", "ja": "富士山の高さはどのくらいですか？"}, {"display": "How long is the Tone River?", "typable": "how long is the tone river", "ja": "利根川の長さはどのくらいですか？"}, {"display": "How deep is this lake?", "typable": "how deep is this lake", "ja": "この湖の深さはどのくらいですか？"}, {"display": "How much is the ticket?", "typable": "how much is the ticket", "ja": "チケットはいくらですか？"}, {"display": "Who plays baseball well? — Ken does.", "typable": "who plays baseball well ken does", "ja": "誰が野球が上手ですか？\n— ケンです。"}, {"display": "Who is the captain of the baseball team?", "typable": "who is the captain of the baseball team", "ja": "野球チームのキャプテンは誰ですか？"}, {"display": "Which is your cup, this one or that one?", "typable": "which is your cup this one or that one", "ja": "どちらがあなたのカップですか？"}, {"display": "Which do you want, iced tea or hot tea?", "typable": "which do you want iced tea or hot tea", "ja": "あなたはどちらの飲み物がほしいですか？"}, {"display": "What subject do you like?", "typable": "what subject do you like", "ja": "あなたはどの教科が好きですか？"}, {"display": "Which subject do you like, English or math?", "typable": "which subject do you like english or math", "ja": "あなたは英語と数学、どちらの教科が好きですか？"}]}, {"key": "s_lesson6", "label": "Lesson 6", "sentences": [{"display": "Open the window.", "typable": "open the window", "ja": "窓を開けなさい。"}, {"display": "Wash your hands, Ken.", "typable": "wash your hands ken", "ja": "ケン、手を洗いなさい。"}, {"display": "Ken, use this towel.", "typable": "ken use this towel", "ja": "ケン、このタオルを使いなさい。"}, {"display": "Please put the plates on the table.", "typable": "please put the plates on the table", "ja": "皿をテーブルの上に置いてください。"}, {"display": "Have a seat, please.", "typable": "have a seat please", "ja": "どうぞ座ってください。"}, {"display": "Let's go to the park.", "typable": "lets go to the park", "ja": "公園へ行きましょう。"}, {"display": "Let's play tennis again.", "typable": "lets play tennis again", "ja": "またテニスをしましょう。"}, {"display": "Don't touch the picture.", "typable": "dont touch the picture", "ja": "その絵に触れてはいけません。"}, {"display": "Please don't run in the museum.", "typable": "please dont run in the museum", "ja": "博物館の中では走らないでください。"}, {"display": "I can play the piano.", "typable": "i can play the piano", "ja": "私はピアノを弾くことができます。"}, {"display": "Bob can write songs.", "typable": "bob can write songs", "ja": "ボブは歌を作ることができます。"}, {"display": "Lisa and Tom can sing very well.", "typable": "lisa and tom can sing very well", "ja": "リサとトムはとても上手に歌うことができます。"}, {"display": "We can make a nice band.", "typable": "we can make a nice band", "ja": "私たちは素敵なバンドを作ることができます。"}, {"display": "I can't run fast.", "typable": "i cant run fast", "ja": "私は速く走ることができません。"}, {"display": "Jun can't swim very well.", "typable": "jun cant swim very well", "ja": "ジュンはあまり上手に泳ぐことができません。"}, {"display": "We cannot go to the pool today.", "typable": "we cannot go to the pool today", "ja": "私たちは今日プールへ行くことができません。"}, {"display": "Can you ski? — Yes, I can. / No, I can't.", "typable": "can you ski yes i can no i cant", "ja": "あなたはスキーができますか？\n— はい、できます。/ いいえ、できません。"}, {"display": "Can Tom skate? — Yes, he can. / No, he can't.", "typable": "can tom skate yes he can no he cant", "ja": "トムはスケートができますか？\n— はい、できます。/ いいえ、できません。"}, {"display": "Can Eri and Mary come with us? — Yes, they can. / No, they can't.", "typable": "can eri and mary come with us yes they can no they cant", "ja": "エリとメアリーは私たちと一緒に来ることができますか？\n— はい、来られます。/ いいえ、来られません。"}, {"display": "What can you see from there?", "typable": "what can you see from there", "ja": "そこから何が見えますか？"}, {"display": "Be a good boy, Rob.", "typable": "be a good boy rob", "ja": "ロブ、よい子でいなさい。"}, {"display": "Everybody, don't be noisy.", "typable": "everybody dont be noisy", "ja": "みなさん、騒がしくしてはいけません。"}, {"display": "Don't be late for the club meeting.", "typable": "dont be late for the club meeting", "ja": "クラブのミーティングに遅れてはいけません。"}]}, {"key": "s_lesson7", "label": "Lesson 7", "sentences": [{"display": "I am playing a video game now.", "typable": "i am playing a video game now", "ja": "私は今テレビゲームをしています。"}, {"display": "My brother is sleeping in his room.", "typable": "my brother is sleeping in his room", "ja": "私の兄は自分の部屋で眠っています。"}, {"display": "My parents are watching TV in the living room.", "typable": "my parents are watching tv in the living room", "ja": "私の両親はリビングでテレビを見ています。"}, {"display": "Mary is making a cake for her mother.", "typable": "mary is making a cake for her mother", "ja": "メアリーはお母さんのためにケーキを作っています。"}, {"display": "Mary's parents are running in the park.", "typable": "marys parents are running in the park", "ja": "メアリーの両親は公園で走っています。"}, {"display": "Mary's dog is lying on the sofa.", "typable": "marys dog is lying on the sofa", "ja": "メアリーの犬はソファーに横たわっています。"}, {"display": "I am not listening to music.", "typable": "i am not listening to music", "ja": "私は音楽を聴いていません。動画をオンラインで見ています。"}, {"display": "Jane is not using it now.", "typable": "jane is not using it now", "ja": "このタブレットを使いなさい。ジェーンは今それを使っていません。"}, {"display": "The students are not studying.", "typable": "the students are not studying", "ja": "生徒たちは勉強していません。"}, {"display": "Are you doing your homework now?", "typable": "are you doing your homework now", "ja": "あなたは今宿題をしていますか？"}, {"display": "Is Dad cooking?", "typable": "is dad cooking", "ja": "お父さんは料理をしていますか？"}, {"display": "Are Rob and Ken playing outside?", "typable": "are rob and ken playing outside", "ja": "ロブとケンは外で遊んでいますか？"}, {"display": "What is Ken looking for?", "typable": "what is ken looking for", "ja": "ケンは何を探していますか？"}, {"display": "What are you doing here?", "typable": "what are you doing here", "ja": "あなたはここで何をしていますか？"}, {"display": "Where is Mary going?", "typable": "where is mary going", "ja": "メアリーはどこへ行くところですか？"}, {"display": "Who is talking loudly in the library?", "typable": "who is talking loudly in the library", "ja": "図書館で誰が大声で話していますか？"}, {"display": "I drink milk every day.", "typable": "i drink milk every day", "ja": "私は毎日牛乳を飲みます。"}, {"display": "I am drinking hot tea.", "typable": "i am drinking hot tea", "ja": "私は今ホットティーを飲んでいます。"}, {"display": "My father takes a bath before dinner.", "typable": "my father takes a bath before dinner", "ja": "私の父は夕食前に風呂に入ります。"}, {"display": "My father is taking a shower now.", "typable": "my father is taking a shower now", "ja": "私の父は今シャワーを浴びています。"}, {"display": "My cat usually sleeps on my bed.", "typable": "my cat usually sleeps on my bed", "ja": "私のネコはたいてい私のベッドで眠ります。"}, {"display": "My cat is sleeping by the table.", "typable": "my cat is sleeping by the table", "ja": "私のネコはテーブルのそばで眠っています。"}, {"display": "Sam loves tennis.", "typable": "sam loves tennis", "ja": "サムはテニスが大好きです。"}, {"display": "He knows the rules of tennis very well.", "typable": "he knows the rules of tennis very well", "ja": "彼はテニスのルールをよく知っています。"}, {"display": "He has many tennis rackets.", "typable": "he has many tennis rackets", "ja": "彼はテニスラケットをたくさん持っています。"}, {"display": "He belongs to the tennis club.", "typable": "he belongs to the tennis club", "ja": "彼はテニスクラブに所属しています。"}]}, {"key": "s_lesson8", "label": "Lesson 8", "sentences": [{"display": "I cleaned my room last night.", "typable": "i cleaned my room last night", "ja": "私は昨晩部屋を掃除しました。"}, {"display": "My friend called me two days ago.", "typable": "my friend called me two days ago", "ja": "私の友達は2日前に私に電話してくれました。"}, {"display": "Lisa and I studied for our English exam yesterday.", "typable": "lisa and i studied for our english exam yesterday", "ja": "リサと私は昨日英語の試験のために勉強しました。"}, {"display": "She dropped her house key on her way home.", "typable": "she dropped her house key on her way home", "ja": "彼女は家に帰る途中で家の鍵を落としました。"}, {"display": "I didn't use my smartphone last night.", "typable": "i didnt use my smartphone last night", "ja": "私は昨夜スマートフォンを使いませんでした。"}, {"display": "My smartphone did not work yesterday.", "typable": "my smartphone did not work yesterday", "ja": "私のスマートフォンは昨日機能しませんでした。"}, {"display": "Did you call Jane last Monday?", "typable": "did you call jane last monday", "ja": "あなたはこの前の月曜日にジェーンに電話しましたか？"}, {"display": "Did Jane call you back?", "typable": "did jane call you back", "ja": "ジェーンはあなたに折り返し電話しましたか？"}, {"display": "When did Mike visit Jane? — He visited her last week.", "typable": "when did mike visit jane he visited her last week", "ja": "マイクはいつジェーンを訪ねましたか？\n— 先週訪ねました。"}, {"display": "Where did Jane travel last weekend? — She traveled to Kyoto.", "typable": "where did jane travel last weekend she traveled to kyoto", "ja": "ジェーンは先週末どこへ旅行しましたか？\n— 京都へ旅行しました。"}, {"display": "Who cleaned the living room?", "typable": "who cleaned the living room", "ja": "誰が居間を掃除しましたか？"}, {"display": "I went to London last month.", "typable": "i went to london last month", "ja": "私は先月ロンドンへ行きました。"}, {"display": "We left the hotel for the airport at five.", "typable": "we left the hotel for the airport at five", "ja": "私たちは5時にホテルを出て空港へ向かいました。"}, {"display": "We saw a famous actor on the plane.", "typable": "we saw a famous actor on the plane", "ja": "私たちは飛行機の中で有名な俳優を見かけました。"}, {"display": "Did you buy a comic book? — No, I didn't. I bought a dictionary.", "typable": "did you buy a comic book no i didnt i bought a dictionary", "ja": "あなたは漫画の本を買いましたか？\n— いいえ。辞書を買いました。"}, {"display": "I didn't drink any coffee yesterday. I drank a lot of tea.", "typable": "i didnt drink any coffee yesterday i drank a lot of tea", "ja": "私は昨日少しもコーヒーを飲みませんでした。紅茶をたくさん飲みました。"}, {"display": "What did Mr. White eat this morning? — He ate an English breakfast.", "typable": "what did mr white eat this morning he ate an english breakfast", "ja": "ホワイトさんは今朝何を食べましたか？\n— イギリス式朝食を食べました。"}, {"display": "What time did you get up this morning? — I got up at seven.", "typable": "what time did you get up this morning i got up at seven", "ja": "あなたは今朝何時に起きましたか？\n— 7時に起きました。"}, {"display": "When did you come home? — I came home at 8 o'clock.", "typable": "when did you come home i came home at oclock", "ja": "あなたはいつ家に帰ってきましたか？\n— 8時に帰ってきました。"}, {"display": "Who made this cake yesterday?", "typable": "who made this cake yesterday", "ja": "誰が昨日このケーキを作りましたか？"}]}, {"key": "s_lesson9", "label": "Lesson 9", "sentences": [{"display": "I was tired last night.", "typable": "i was tired last night", "ja": "私は昨夜疲れていました。"}, {"display": "My brother was in Hokkaido yesterday.", "typable": "my brother was in hokkaido yesterday", "ja": "私の兄は昨日北海道にいました。"}, {"display": "My parents were busy last week.", "typable": "my parents were busy last week", "ja": "私の両親は先週忙しかったです。"}, {"display": "I wasn't hungry this morning.", "typable": "i wasnt hungry this morning", "ja": "私は今朝お腹がすいていませんでした。"}, {"display": "My dogs weren't in the living room. They were in the garden.", "typable": "my dogs werent in the living room they were in the garden", "ja": "私の犬たちは居間にいませんでした。庭にいました。"}, {"display": "Was Bob in the gym at 4 p.m.? — Yes, he was. / No, he wasn't.", "typable": "was bob in the gym at pm yes he was no he wasnt", "ja": "ボブは午後4時に体育館にいましたか？\n— はい、いました。/ いいえ、いませんでした。"}, {"display": "Where were you at that time? — I was in the music room.", "typable": "where were you at that time i was in the music room", "ja": "その時あなたはどこにいましたか？\n— 音楽室にいました。"}, {"display": "Who was angry at you?", "typable": "who was angry at you", "ja": "誰があなたに怒っていましたか？"}, {"display": "I was playing catch with my dad at 1 p.m. yesterday.", "typable": "i was playing catch with my dad at pm yesterday", "ja": "昨日の午後1時、私はお父さんとキャッチボールをしていました。"}, {"display": "My sisters were having lunch then.", "typable": "my sisters were having lunch then", "ja": "私の姉たちはその時昼食を食べていました。"}, {"display": "I wasn't studying at 9 o'clock last night.", "typable": "i wasnt studying at oclock last night", "ja": "昨夜9時、私は勉強していませんでした。"}, {"display": "We weren't listening to the teacher.", "typable": "we werent listening to the teacher", "ja": "私たちは先生の言うことを聞いていませんでした。"}, {"display": "Were you talking with Bob at 10 p.m.? — Yes, I was. / No, I wasn't.", "typable": "were you talking with bob at pm yes i was no i wasnt", "ja": "あなたは午後10時にボブと話していましたか？\n— はい、話していました。/ いいえ、話していませんでした。"}, {"display": "Were your sisters watching the drama then? — Yes, they were. / No, they weren't.", "typable": "were your sisters watching the drama then yes they were no they werent", "ja": "あなたの姉たちはその時ドラマを見ていましたか？\n— はい、見ていました。/ いいえ、見ていませんでした。"}, {"display": "What was your mom doing at that time?", "typable": "what was your mom doing at that time", "ja": "あなたのお母さんはその時何をしていましたか？"}, {"display": "Who was using the tablet in the living room?", "typable": "who was using the tablet in the living room", "ja": "誰が居間でタブレットを使っていましたか？"}, {"display": "What is the date today?", "typable": "what is the date today", "ja": "今日は何月何日ですか？"}, {"display": "What day is it today?", "typable": "what day is it today", "ja": "今日は何曜日ですか？"}, {"display": "What time is it?", "typable": "what time is it", "ja": "何時ですか？"}, {"display": "How is the weather today?", "typable": "how is the weather today", "ja": "今日の天気はどうですか？"}, {"display": "It rained early this morning.", "typable": "it rained early this morning", "ja": "今朝早くに雨が降りました。"}, {"display": "It is cold and dark outside now.", "typable": "it is cold and dark outside now", "ja": "今、外は寒くて暗いです。"}, {"display": "How far is it from your house to the station?", "typable": "how far is it from your house to the station", "ja": "あなたの家から駅まではどのくらいの距離ですか？"}]}, {"key": "s_lesson10", "label": "Lesson 10", "sentences": [{"display": "I am going to visit my friend tomorrow.", "typable": "i am going to visit my friend tomorrow", "ja": "私は明日友だちを訪ねるつもりです。"}, {"display": "We are going to have dinner together.", "typable": "we are going to have dinner together", "ja": "私たちは一緒に夕食をとる予定です。"}, {"display": "It is going to be rainy this afternoon.", "typable": "it is going to be rainy this afternoon", "ja": "今日の午後は雨が降るでしょう。"}, {"display": "Are you going to stay home tonight?", "typable": "are you going to stay home tonight", "ja": "あなたは今夜家にいるつもりですか？"}, {"display": "I am not going to climb Mt. Takao tomorrow.", "typable": "i am not going to climb mt takao tomorrow", "ja": "私は明日高尾山に登る予定ではありません。"}, {"display": "What is Lisa going to do in the festival?", "typable": "what is lisa going to do in the festival", "ja": "リサはそのフェスティバルで何をする予定ですか？"}, {"display": "Who is going to sing in the band?", "typable": "who is going to sing in the band", "ja": "誰がバンドで歌う予定ですか？"}, {"display": "How do you go to school?", "typable": "how do you go to school", "ja": "あなたはどうやって学校へ行きますか？"}, {"display": "How did you carry such a big suitcase?", "typable": "how did you carry such a big suitcase", "ja": "あなたはどうやってそんな大きなスーツケースを運んだのですか？"}, {"display": "How long is Mr. Smith going to stay in Japan?", "typable": "how long is mr smith going to stay in japan", "ja": "スミスさんはどのくらいの期間日本に滞在する予定ですか？"}, {"display": "How often does Mr. Smith come to Japan?", "typable": "how often does mr smith come to japan", "ja": "スミスさんはどのくらいの頻度で日本に来ますか？"}, {"display": "Why is Mr. Smith angry? — Because John came late to class.", "typable": "why is mr smith angry because john came late to class", "ja": "なぜスミス先生は怒っているのですか？\n— なぜならジョンが遅刻したからです。"}, {"display": "Why did John come late? — Because he talked with his friends for a long time.", "typable": "why did john come late because he talked with his friends for a long time", "ja": "なぜジョンは遅刻したのですか？\n— なぜなら友達と長話をしたからです。"}, {"display": "It will be rainy this afternoon.", "typable": "it will be rainy this afternoon", "ja": "今日の午後は雨になるでしょう。"}, {"display": "I will take an umbrella with me.", "typable": "i will take an umbrella with me", "ja": "私は傘を持っていくつもりです。"}, {"display": "It is raining. We won't go cycling today.", "typable": "it is raining we wont go cycling today", "ja": "雨が降っています。私たちは今日サイクリングには行かないでしょう。"}, {"display": "You can use my pen.", "typable": "you can use my pen", "ja": "私のペンを使ってもいいですよ。"}, {"display": "Can I borrow your dictionary?", "typable": "can i borrow your dictionary", "ja": "あなたの辞書を借りてもいいですか？"}, {"display": "You may come in.", "typable": "you may come in", "ja": "入ってもいいですよ。"}, {"display": "May I have your name, please?", "typable": "may i have your name please", "ja": "お名前をうかがってもよろしいですか？"}, {"display": "It may snow tomorrow morning.", "typable": "it may snow tomorrow morning", "ja": "明日の朝は雪が降るかもしれません。"}, {"display": "I must buy a ring for Lisa.", "typable": "i must buy a ring for lisa", "ja": "私はリサに指輪を買わなければなりません。"}, {"display": "You must take off your hat in this restaurant.", "typable": "you must take off your hat in this restaurant", "ja": "このレストランでは帽子を脱がなければなりません。"}, {"display": "Rob's story must be true.", "typable": "robs story must be true", "ja": "ロブの話は本当に違いありません。"}, {"display": "You must not be late for the exam.", "typable": "you must not be late for the exam", "ja": "試験に遅れてはいけません。"}, {"display": "The students mustn't use cell phones during the exam.", "typable": "the students mustnt use cell phones during the exam", "ja": "生徒たちは試験中に携帯電話を使用してはいけません。"}]}, {"key": "s_lesson11", "label": "Lesson 11", "sentences": [{"display": "There is a zoo in my town.", "typable": "there is a zoo in my town", "ja": "私の町には動物園があります。"}, {"display": "There are two white tigers in the zoo.", "typable": "there are two white tigers in the zoo", "ja": "動物園には白いトラが2頭います。"}, {"display": "There was a shopping mall near the zoo three years ago.", "typable": "there was a shopping mall near the zoo three years ago", "ja": "3年前、動物園の近くにショッピングモールがありました。"}, {"display": "There were a lot of tourists in the town.", "typable": "there were a lot of tourists in the town", "ja": "町にはたくさんの観光客がいました。"}, {"display": "There aren't any traffic lights on this road.", "typable": "there arent any traffic lights on this road", "ja": "この道路には信号機が1つもありません。"}, {"display": "There is no library in our school.", "typable": "there is no library in our school", "ja": "私たちの学校には図書館がありません。"}, {"display": "There were no traffic lights on this island ten years ago.", "typable": "there were no traffic lights on this island ten years ago", "ja": "10年前、この島には信号機がひとつもありませんでした。"}, {"display": "Is there a supermarket near your house?", "typable": "is there a supermarket near your house", "ja": "あなたの家の近くにスーパーマーケットはありますか？"}, {"display": "Are there any coffee shops on this island?", "typable": "are there any coffee shops on this island", "ja": "この島にはコーヒーショップがいくつかありますか？"}, {"display": "There are a lot of beautiful places in Japan.", "typable": "there are a lot of beautiful places in japan", "ja": "日本にはたくさんの美しい場所があります。"}, {"display": "There is little snow in Okinawa.", "typable": "there is little snow in okinawa", "ja": "沖縄では雪はほとんど降りません。"}, {"display": "Is there much snow in Hokkaido?", "typable": "is there much snow in hokkaido", "ja": "北海道では雪がたくさん降りますか？"}, {"display": "We want three cups of coffee and five glasses of orange juice.", "typable": "we want three cups of coffee and five glasses of orange juice", "ja": "私たちはコーヒーを3杯とオレンジジュースを5杯ほしいです。"}, {"display": "I need a pen and a sheet of paper.", "typable": "i need a pen and a sheet of paper", "ja": "私はペン1本と紙が1枚必要です。"}, {"display": "How many rooms are there in this hotel?", "typable": "how many rooms are there in this hotel", "ja": "このホテルには部屋がいくつありますか？"}, {"display": "How many students were there at the entrance?", "typable": "how many students were there at the entrance", "ja": "入り口には生徒が何人いましたか？"}, {"display": "How much sugar is there in the pot?", "typable": "how much sugar is there in the pot", "ja": "つぼの中に砂糖はどのくらいありますか？"}]}, {"key": "s_lesson12", "label": "Lesson 12", "sentences": [{"display": "I am as tall as my mother.", "typable": "i am as tall as my mother", "ja": "私は母と同じくらいの背の高さです。"}, {"display": "My old bicycle was as expensive as my new one.", "typable": "my old bicycle was as expensive as my new one", "ja": "私の古い自転車は新しい自転車と同じくらい値段が高かったです。"}, {"display": "Baseball is as popular in my country as in your country.", "typable": "baseball is as popular in my country as in your country", "ja": "野球はあなたの国と同じくらい私の国でも人気があります。"}, {"display": "Yoshiki plays soccer as well as Robert.", "typable": "yoshiki plays soccer as well as robert", "ja": "ヨシキはロバートと同じくらいサッカーが上手です。"}, {"display": "Robert gets up as early as his mother.", "typable": "robert gets up as early as his mother", "ja": "ロバートは彼のお母さんと同じくらい早く起きます。"}, {"display": "In Brazil baseball is not as popular as soccer.", "typable": "in brazil baseball is not as popular as soccer", "ja": "ブラジルでは野球はサッカーほど人気がありません。"}, {"display": "Our soccer team doesn't have as many players as yours.", "typable": "our soccer team doesnt have as many players as yours", "ja": "私たちのサッカーチームはあなたのチームほど選手がいません。"}, {"display": "Ken doesn't practice baseball as hard as John does.", "typable": "ken doesnt practice baseball as hard as john does", "ja": "ケンはジョンほど一生懸命に野球の練習をしません。"}, {"display": "Mr. Smith is taller than my father.", "typable": "mr smith is taller than my father", "ja": "スミスさんは私の父より背が高いです。"}, {"display": "John's new PC is bigger than mine.", "typable": "johns new pc is bigger than mine", "ja": "ジョンの新しいパソコンは私のものより大きいです。"}, {"display": "This question was more difficult for me than that one.", "typable": "this question was more difficult for me than that one", "ja": "この問題は私にとってあの問題よりも難しかったです。"}, {"display": "Mike runs faster than John.", "typable": "mike runs faster than john", "ja": "マイクはジョンより速く走ります。"}, {"display": "Please speak more slowly.", "typable": "please speak more slowly", "ja": "もっとゆっくり話してください。"}, {"display": "Mt. Fuji is the highest mountain in Japan.", "typable": "mt fuji is the highest mountain in japan", "ja": "富士山は日本でいちばん高い山です。"}, {"display": "Tokyo is the largest of all cities in Japan.", "typable": "tokyo is the largest of all cities in japan", "ja": "東京は日本のすべての都市の中でいちばん大きいです。"}, {"display": "Paris is the most popular city in the world for tourists.", "typable": "paris is the most popular city in the world for tourists", "ja": "パリは世界で最も観光客に人気のある都市です。"}, {"display": "Ken takes the first bus and arrives the earliest in the class.", "typable": "ken takes the first bus and arrives the earliest in the class", "ja": "ケンは始発のバスに乗ってクラスでいちばん早く着きます。"}, {"display": "Yoko listened to the teacher the most carefully of the five.", "typable": "yoko listened to the teacher the most carefully of the five", "ja": "ヨウコは5人の中で最も注意深く先生の話を聞きました。"}, {"display": "Mike plays basketball better than Bill does.", "typable": "mike plays basketball better than bill does", "ja": "マイクはビルよりバスケットボールが上手です。"}, {"display": "The score in the game was the worst in history.", "typable": "the score in the game was the worst in history", "ja": "その試合の得点は史上最悪のものでした。"}, {"display": "Mike enjoyed the game the most in our team.", "typable": "mike enjoyed the game the most in our team", "ja": "マイクは私たちのチームの中で最も試合を楽しみました。"}, {"display": "Mike is the best basketball player of our teammates.", "typable": "mike is the best basketball player of our teammates", "ja": "マイクは私たちのチームメイトの中で最も優秀なバスケットボール選手です。"}, {"display": "Which is older, the library or the gym?", "typable": "which is older the library or the gym", "ja": "図書館と体育館では、どちらがより古いですか？"}, {"display": "Who is younger, your brother or Tom's brother?", "typable": "who is younger your brother or toms brother", "ja": "あなたのお兄さんとトムのお兄さんでは、どちらが若いですか？"}, {"display": "Which is the most popular club in your school?", "typable": "which is the most popular club in your school", "ja": "あなたの学校でいちばん人気のあるクラブはどれですか？"}, {"display": "Who is the tallest student in your class?", "typable": "who is the tallest student in your class", "ja": "あなたのクラスでいちばん背が高い生徒は誰ですか？"}, {"display": "Who swims the fastest of the four?", "typable": "who swims the fastest of the four", "ja": "4人の中で誰がいちばん速く泳ぎますか？"}, {"display": "Which do you like better, history or math?", "typable": "which do you like better history or math", "ja": "あなたは歴史と数学ではどちらの方が好きですか？"}, {"display": "Which subject do you like the best?", "typable": "which subject do you like the best", "ja": "あなたはどの教科がいちばん好きですか？"}, {"display": "What sport do you like the best?", "typable": "what sport do you like the best", "ja": "あなたは何のスポーツがいちばん好きですか？"}]}];
+const HYAKUNIN = [{"n": 1, "kami": "あきのたのかりほのいほのとまをあらみ", "shimo": "わがころもではつゆにぬれつつ"}, {"n": 2, "kami": "はるすぎてなつきにけらししろたへの", "shimo": "ころもほすてふあまのかぐやま"}, {"n": 3, "kami": "あしびきのやまどりのをのしだりをの", "shimo": "ながながしよをひとりかもねむ"}, {"n": 4, "kami": "たごのうらにうちいでてみればしろたへの", "shimo": "ふじのたかねにゆきはふりつつ"}, {"n": 5, "kami": "おくやまにもみぢふみわけなくしかの", "shimo": "こゑきくときぞあきはかなしき"}, {"n": 6, "kami": "かささぎのわたせるはしにおくしもの", "shimo": "しろきをみればよぞふけにける"}, {"n": 7, "kami": "あまのはらふりさけみればかすがなる", "shimo": "みかさのやまにいでしつきかも"}, {"n": 8, "kami": "わがいほはみやこのたつみしかぞすむ", "shimo": "よをうぢやまとひとはいふなり"}, {"n": 9, "kami": "はなのいろはうつりにけりないたづらに", "shimo": "わがみよにふるながめせしまに"}, {"n": 10, "kami": "これやこのゆくもかへるもわかれては", "shimo": "しるもしらぬもあふさかのせき"}, {"n": 11, "kami": "わたのはらやそしまかけてこぎいでぬと", "shimo": "ひとにはつげよあまのつりぶね"}, {"n": 12, "kami": "あまつかぜくものかよひぢふきとぢよ", "shimo": "をとめのすがたしばしとどめむ"}, {"n": 13, "kami": "つくばねのみねよりおつるみなのがは", "shimo": "こひぞつもりてふちとなりぬる"}, {"n": 14, "kami": "みちのくのしのぶもぢずりたれゆゑに", "shimo": "みだれそめにしわれならなくに"}, {"n": 15, "kami": "きみがためはるののにいでてわかなつむ", "shimo": "わがころもでにゆきはふりつつ"}, {"n": 16, "kami": "たちわかれいなばのやまのみねにおふる", "shimo": "まつとしきかばいまかへりこむ"}, {"n": 17, "kami": "ちはやぶるかみよもきかずたつたがは", "shimo": "からくれなゐにみづくくるとは"}, {"n": 18, "kami": "すみのえのきしによるなみよるさへや", "shimo": "ゆめのかよひぢひとめよくらむ"}, {"n": 19, "kami": "なにはがたみじかきあしのふしのまも", "shimo": "あはでこのよをすぐしてよとや"}, {"n": 20, "kami": "わびぬればいまはたおなじなにはなる", "shimo": "みをつくしてもあはむとぞおもふ"}, {"n": 21, "kami": "いまこむといひしばかりにながつきの", "shimo": "ありあけのつきをまちいでつるかな"}, {"n": 22, "kami": "ふくからにあきのくさきのしをるれば", "shimo": "むべやまかぜをあらしといふらむ"}, {"n": 23, "kami": "つきみればちぢにものこそかなしけれ", "shimo": "わがみひとつのあきにはあらねど"}, {"n": 24, "kami": "このたびはぬさもとりあへずたむけやま", "shimo": "もみぢのにしきかみのまにまに"}, {"n": 25, "kami": "なにしおはばあふさかやまのさねかづら", "shimo": "ひとにしられでくるよしもがな"}, {"n": 26, "kami": "をぐらやまみねのもみぢばこころあらば", "shimo": "いまひとたびのみゆきまたなむ"}, {"n": 27, "kami": "みかのはらわきてながるるいづみがは", "shimo": "いつみきとてかこひしかるらむ"}, {"n": 28, "kami": "やまざとはふゆぞさびしさまさりける", "shimo": "ひとめもくさもかれぬとおもへば"}, {"n": 29, "kami": "こころあてにをらばやをらむはつしもの", "shimo": "おきまどはせるしらぎくのはな"}, {"n": 30, "kami": "ありあけのつれなくみえしわかれより", "shimo": "あかつきばかりうきものはなし"}, {"n": 31, "kami": "あさぼらけありあけのつきとみるまでに", "shimo": "よしののさとにふれるしらゆき"}, {"n": 32, "kami": "やまがはにかぜのかけたるしがらみは", "shimo": "ながれもあへぬもみぢなりけり"}, {"n": 33, "kami": "ひさかたのひかりのどけきはるのひに", "shimo": "しづごころなくはなのちるらむ"}, {"n": 34, "kami": "たれをかもしるひとにせむたかさごの", "shimo": "まつもむかしのともならなくに"}, {"n": 35, "kami": "ひとはいさこころもしらずふるさとは", "shimo": "はなぞむかしのかににほひける"}, {"n": 36, "kami": "なつのよはまだよひながらあけぬるを", "shimo": "くものいづこにつきやどるらむ"}, {"n": 37, "kami": "しらつゆにかぜのふきしくあきののは", "shimo": "つらぬきとめぬたまぞちりける"}, {"n": 38, "kami": "わすらるるみをばおもはずちかひてし", "shimo": "ひとのいのちのをしくもあるかな"}, {"n": 39, "kami": "あさぢふのをののしのはらしのぶれど", "shimo": "あまりてなどかひとのこひしき"}, {"n": 40, "kami": "しのぶれどいろにいでにけりわがこひは", "shimo": "ものやおもふとひとのとふまで"}, {"n": 41, "kami": "こひすてふわがなはまだきたちにけり", "shimo": "ひとしれずこそおもひそめしか"}, {"n": 42, "kami": "ちぎりきなかたみにそでをしぼりつつ", "shimo": "すゑのまつやまなみこさじとは"}, {"n": 43, "kami": "あひみてののちのこころにくらぶれば", "shimo": "むかしはものをおもはざりけり"}, {"n": 44, "kami": "あふことのたえてしなくはなかなかに", "shimo": "ひとをもみをもうらみざらまし"}, {"n": 45, "kami": "あはれともいふべきひとはおもほえで", "shimo": "みのいたづらになりぬべきかな"}, {"n": 46, "kami": "ゆらのとをわたるふなびとかぢをたえ", "shimo": "ゆくへもしらぬこひのみちかな"}, {"n": 47, "kami": "やへむぐらしげれるやどのさびしきに", "shimo": "ひとこそみえねあきはきにけり"}, {"n": 48, "kami": "かぜをいたみいはうつなみのおのれのみ", "shimo": "くだけてものをおもふころかな"}, {"n": 49, "kami": "みかきもりゑじのたくひのよるはもえ", "shimo": "ひるはきえつつものをこそおもへ"}, {"n": 50, "kami": "きみがためをしからざりしいのちさへ", "shimo": "ながくもがなとおもひけるかな"}, {"n": 51, "kami": "かくとだにえやはいぶきのさしもぐさ", "shimo": "さしもしらじなもゆるおもひを"}, {"n": 52, "kami": "あけぬればくるるものとはしりながら", "shimo": "なほうらめしきあさぼらけかな"}, {"n": 53, "kami": "なげきつつひとりぬるよのあくるまは", "shimo": "いかにひさしきものとかはしる"}, {"n": 54, "kami": "わすれじのゆくすゑまではかたければ", "shimo": "けふをかぎりのいのちともがな"}, {"n": 55, "kami": "たきのおとはたえてひさしくなりぬれど", "shimo": "なこそながれてなほきこえけれ"}, {"n": 56, "kami": "あらざらむこのよのほかのおもひでに", "shimo": "いまひとたびのあふこともがな"}, {"n": 57, "kami": "めぐりあひてみしやそれともわかぬまに", "shimo": "くもがくれにしよはのつきかな"}, {"n": 58, "kami": "ありまやまゐなのささはらかぜふけば", "shimo": "いでそよひとをわすれやはする"}, {"n": 59, "kami": "やすらはでねなましものをさよふけて", "shimo": "かたぶくまでのつきをみしかな"}, {"n": 60, "kami": "おほえやまいくののみちのとほければ", "shimo": "まだふみもみずあまのはしだて"}, {"n": 61, "kami": "いにしへのならのみやこのやへざくら", "shimo": "けふここのへににほひぬるかな"}, {"n": 62, "kami": "よをこめてとりのそらねははかるとも", "shimo": "よにあふさかのせきはゆるさじ"}, {"n": 63, "kami": "いまはただおもひたえなむとばかりを", "shimo": "ひとづてならでいふよしもがな"}, {"n": 64, "kami": "あさぼらけうぢのかはぎりたえだえに", "shimo": "あらはれわたるせぜのあじろぎ"}, {"n": 65, "kami": "うらみわびほさぬそでだにあるものを", "shimo": "こひにくちなむなこそをしけれ"}, {"n": 66, "kami": "もろともにあはれとおもへやまざくら", "shimo": "はなよりほかにしるひともなし"}, {"n": 67, "kami": "はるのよのゆめばかりなるたまくらに", "shimo": "かひなくたたむなこそをしけれ"}, {"n": 68, "kami": "こころにもあらでうきよにながらへば", "shimo": "こひしかるべきよはのつきかな"}, {"n": 69, "kami": "あらしふくみむろのやまのもみぢばは", "shimo": "たつたのかはのにしきなりけり"}, {"n": 70, "kami": "さびしさにやどをたちいでてながむれば", "shimo": "いづこもおなじあきのゆふぐれ"}, {"n": 71, "kami": "ゆふさればかどたのいなばおとづれて", "shimo": "あしのまろやにあきかぜぞふく"}, {"n": 72, "kami": "おとにきくたかしのはまのあだなみは", "shimo": "かけじやそでのぬれもこそすれ"}, {"n": 73, "kami": "たかさごのをのへのさくらさきにけり", "shimo": "とやまのかすみたたずもあらなむ"}, {"n": 74, "kami": "うかりけるひとをはつせのやまおろしよ", "shimo": "はげしかれとはいのらぬものを"}, {"n": 75, "kami": "ちぎりおきしさせもがつゆをいのちにて", "shimo": "あはれことしのあきもいぬめり"}, {"n": 76, "kami": "わたのはらこぎいでてみればひさかたの", "shimo": "くもゐにまがふおきつしらなみ"}, {"n": 77, "kami": "せをはやみいはにせかるるたきがはの", "shimo": "われてもすゑにあはむとぞおもふ"}, {"n": 78, "kami": "あはぢしまかよふちどりのなくこゑに", "shimo": "いくよねざめぬすまのせきもり"}, {"n": 79, "kami": "あきかぜにたなびくくものたえまより", "shimo": "もれいづるつきのかげのさやけさ"}, {"n": 80, "kami": "ながからむこころもしらずくろかみの", "shimo": "みだれてけさはものをこそおもへ"}, {"n": 81, "kami": "ほととぎすなきつるかたをながむれば", "shimo": "ただありあけのつきぞのこれる"}, {"n": 82, "kami": "おもひわびさてもいのちはあるものを", "shimo": "うきにたへぬはなみだなりけり"}, {"n": 83, "kami": "よのなかよみちこそなけれおもひいる", "shimo": "やまのおくにもしかぞなくなる"}, {"n": 84, "kami": "ながらへばまたこのごろやしのばれむ", "shimo": "うしとみしよぞいまはこひしき"}, {"n": 85, "kami": "よもすがらものおもふころはあけやらで", "shimo": "ねやのひまさへつれなかりけり"}, {"n": 86, "kami": "なげけとてつきやはものをおもはする", "shimo": "かこちがほなるわがなみだかな"}, {"n": 87, "kami": "むらさめのつゆもまだひぬまきのはに", "shimo": "きりたちのぼるあきのゆふぐれ"}, {"n": 88, "kami": "なにはえのあしのかりねのひとよゆゑ", "shimo": "みをつくしてやこひわたるべき"}, {"n": 89, "kami": "たまのをよたえなばたえねながらへば", "shimo": "しのぶることのよわりもぞする"}, {"n": 90, "kami": "みせばやなをじまのあまのそでだにも", "shimo": "ぬれにぞぬれしいろはかはらず"}, {"n": 91, "kami": "きりぎりすなくやしもよのさむしろに", "shimo": "ころもかたしきひとりかもねむ"}, {"n": 92, "kami": "わがそではしほひにみえぬおきのいしの", "shimo": "ひとこそしらねかわくまもなし"}, {"n": 93, "kami": "よのなかはつねにもがもななぎさこぐ", "shimo": "あまのをぶねのつなでかなしも"}, {"n": 94, "kami": "みよしののやまのあきかぜさよふけて", "shimo": "ふるさとさむくころもうつなり"}, {"n": 95, "kami": "おほけなくうきよのたみにおほふかな", "shimo": "わがたつそまにすみぞめのそで"}, {"n": 96, "kami": "はなさそふあらしのにはのゆきならで", "shimo": "ふりゆくものはわがみなりけり"}, {"n": 97, "kami": "こぬひとをまつほのうらのゆふなぎに", "shimo": "やくやもしほのみもこがれつつ"}, {"n": 98, "kami": "かぜそよぐならのをがはのゆふぐれは", "shimo": "みそぎぞなつのしるしなりける"}, {"n": 99, "kami": "ひともをしひともうらめしあぢきなく", "shimo": "よをおもふゆゑにものおもふみは"}, {"n": 100, "kami": "ももしきやふるきのきばのしのぶにも", "shimo": "なほあまりあるむかしなりけり"}];
+const KOTOWAZA = [{"kotowaza": "赤子の手をひねる", "imi": "簡単にできること", "hosoku": "", "yomi": "あかごのてをひねる", "imi_yomi": "かんたんにできること"}, {"kotowaza": "悪事千里をはしる", "imi": "悪いうわさはすぐに知れわたる", "hosoku": "", "yomi": "あくじせんりをはしる", "imi_yomi": "わるいうわさはすぐにしれわたる"}, {"kotowaza": "悪銭に身につかず", "imi": "悪いことをして手に入れたお金は、むだに使って、結局なくなってしまう", "hosoku": "", "yomi": "あくせんにみにつかず", "imi_yomi": "わるいことをしててにいれたおかねは、むだにつかって、けっきょくなくなってしまう"}, {"kotowaza": "揚げ足を取る", "imi": "人の失敗につけこむこと", "hosoku": "", "yomi": "あげあしをとる", "imi_yomi": "ひとのしっぱいにつけこむこと"}, {"kotowaza": "足もとから鳥が立つ", "imi": "突然、思いがけないことがおこる", "hosoku": "同:足もとからけむりが出る", "yomi": "あしもとからとりがたつ", "imi_yomi": "とつぜん、おもいがけないことがおこる"}, {"kotowaza": "頭隠して尻隠さず", "imi": "一部の悪いところを隠せても、大部分の悪いところを隠すことはできない", "hosoku": "", "yomi": "あたまかくしてしりかくさず", "imi_yomi": "いちぶのわるいところをかくせても、だいぶぶんのわるいところをかくすことはできない"}, {"kotowaza": "あぶはちとらず", "imi": "両方を手に入れようとして、どちらも手に入れられない", "hosoku": "同:二兎をおう者は一兎をも得ず／反:一石二鳥／反:一挙両得", "yomi": "あぶはちとらず", "imi_yomi": "りょうほうをてにいれようとして、どちらもてにいれられない"}, {"kotowaza": "雨降って地固まる", "imi": "もめごとのあった後は、かえって物事がうまくいくものだ", "hosoku": "", "yomi": "あめふってじかたまる", "imi_yomi": "もめごとのあったあとは、かえってものごとがうまくいくものだ"}, {"kotowaza": "案ずるより産むがやすし", "imi": "心配するよりは、実際にやってみると簡単なものだ", "hosoku": "反:石橋をたたいて渡る／反:念には念を入れよ", "yomi": "あんずるよりうむがやすし", "imi_yomi": "しんぱいするよりは、じっさいにやってみるとかんたんなものだ"}, {"kotowaza": "生き馬の目を抜く", "imi": "すばしっこくて、人を出し抜いて利益を得ること", "hosoku": "", "yomi": "いきうまのめをぬく", "imi_yomi": "すばしっこくて、ひとをだしぬいてりえきをえること"}, {"kotowaza": "石の上にも三年", "imi": "苦しみにたえれば、いずれ報われる", "hosoku": "同:待てば海路のひよりあり", "yomi": "いしのうえにもさんねん", "imi_yomi": "くるしみにたえれば、いずれむくわれる"}, {"kotowaza": "石橋をたたいて渡る", "imi": "用心の上にも用心をすること", "hosoku": "同:念には念を入れよ／同:転ばぬ先の杖", "yomi": "いしばしをたたいてわたる", "imi_yomi": "ようじんのうえにもようじんをすること"}, {"kotowaza": "衣食足りて礼節を知る", "imi": "生活にゆとりができれば、自然に礼儀がただしくなってくる", "hosoku": "", "yomi": "いしょくたりてれいせつをしる", "imi_yomi": "せいかつにゆとりができれば、しぜんにれいぎがただしくなってくる"}, {"kotowaza": "急がば回れ", "imi": "急ぐことほど、あわてずにていねいにした方がよい", "hosoku": "同:急いてはことをし損じる", "yomi": "いそがばまわれ", "imi_yomi": "いそぐことほど、あわてずにていねいにしたほうがよい"}, {"kotowaza": "一事が万事", "imi": "一つのことを見れば、それから、すべてのことがわかる", "hosoku": "", "yomi": "いちじがばんじ", "imi_yomi": "ひとつのことをみれば、それから、すべてのことがわかる"}, {"kotowaza": "一寸の虫にも五分の魂", "imi": "弱いものにもプライド、意地や考えがあるのだから、ばかにしてはいけない", "hosoku": "", "yomi": "いっすんのむしにもごぶのたましい", "imi_yomi": "よわいものにもぷらいど、いじやかんがえがあるのだから、ばかにしてはいけない"}, {"kotowaza": "犬も歩けば棒にあたる", "imi": "①出しゃばるとひどい目にあう ②いろいろと行動していると幸運に出くわすこともある", "hosoku": "", "yomi": "いぬもあるけばぼうにあたる", "imi_yomi": "だしゃばるとひどいめにあう／いろいろとこうどうしているとこううんにでくわすこともある"}, {"kotowaza": "井の中の蛙大海を知らず", "imi": "見聞が少なく、外に広い世界のあることをしらないこと", "hosoku": "", "yomi": "いのなかのかわずたいかいをしらず", "imi_yomi": "けんぶんがすくなく、そとにひろいせかいのあることをしらないこと"}, {"kotowaza": "魚心あれば水心", "imi": "相手の出方しだいでこちらもそれに応じる用意がある", "hosoku": "", "yomi": "うおごころあればみずごころ", "imi_yomi": "あいてのでかたしだいでこちらもそれにおうじるよういがある"}, {"kotowaza": "うそも方便", "imi": "うそをつくことは悪いことだが、物事をうまく進めるために必要なこともある", "hosoku": "", "yomi": "うそもほうべん", "imi_yomi": "うそをつくことはわるいことだが、ものごとをうまくすすめるためにひつようなこともある"}, {"kotowaza": "馬の耳に念仏", "imi": "いっこうに効き目がないこと", "hosoku": "同:馬耳東風／同:蛙の面に水", "yomi": "うまのみみにねんぶつ", "imi_yomi": "いっこうにききめがないこと"}, {"kotowaza": "うわさをすれば影がさす", "imi": "人のうわさをしていると、その人がたまたまあらわれるものだ", "hosoku": "", "yomi": "うわさをすればかげがさす", "imi_yomi": "ひとのうわさをしていると、そのひとがたまたまあらわれるものだ"}, {"kotowaza": "縁の下の力持ち", "imi": "人の知らないところで他人のために力をつくすこと、また、その人", "hosoku": "", "yomi": "えんのしたのちからもち", "imi_yomi": "ひとのしらないところでたにんのためにちからをつくすこと、また、そのひと"}, {"kotowaza": "鬼に金棒", "imi": "強い者がさらによい条件でますます強くなること", "hosoku": "", "yomi": "おににかなぼう", "imi_yomi": "つよいものがさらによいじょうけんでますますつよくなること"}, {"kotowaza": "鬼の居ぬ間に洗濯", "imi": "こわい者がいない間に自由にくつろぐこと", "hosoku": "", "yomi": "おにのいぬまにせんたく", "imi_yomi": "こわいものがいないあいだにじゆうにくつろぐこと"}, {"kotowaza": "鬼の目にも涙", "imi": "薄情な者でも、時には情けを感じて慈悲をほどこすこともある", "hosoku": "", "yomi": "おにのめにもなみだ", "imi_yomi": "はくじょうなものでも、ときにはなさけをかんじてじひをほどこすこともある"}, {"kotowaza": "帯に短したすきに長し", "imi": "中途半端で役に立たない", "hosoku": "", "yomi": "おびにみじかしたすきにながし", "imi_yomi": "ちゅうとはんぱでやくにたたない"}, {"kotowaza": "おぼれる者はわらをもつかむ", "imi": "あぶない目にあうと、どんなにたよりにならない物にでも、たよろうとする", "hosoku": "", "yomi": "おぼれるものはわらをもつかむ", "imi_yomi": "あぶないめにあうと、どんなにたよりにならないものにでも、たよろうとする"}, {"kotowaza": "親の心子知らず", "imi": "親の深い心も知らずに、子どもは勝手気ままにふるまう", "hosoku": "", "yomi": "おやのこころこしらず", "imi_yomi": "おやのふかいこころもしらずに、こどもはかってきままにふるまう"}, {"kotowaza": "親のすねをかじる", "imi": "ひとり立ちしないでずっと親の世話になっている", "hosoku": "", "yomi": "おやのすねをかじる", "imi_yomi": "ひとりだちしないでずっとおやのせわになっている"}, {"kotowaza": "恩をあだでかえす", "imi": "恩を受けたのに、それに対してあだで報いること", "hosoku": "", "yomi": "おんをあだでかえす", "imi_yomi": "おんをうけたのに、それにたいしてあだでむくいること"}, {"kotowaza": "飼い犬に手をかまれる", "imi": "世話をして、恩を与えた者にうらぎられること", "hosoku": "", "yomi": "かいいぬにてをかまれる", "imi_yomi": "せわをして、おんをあたえたものにうらぎられること"}, {"kotowaza": "蛙の面に水", "imi": "どんな目にあってもいっこうに平気で効き目がない", "hosoku": "同:馬の耳に念仏／同:馬耳東風", "yomi": "かえるのつらにみず", "imi_yomi": "どんなめにあってもいっこうにへいきでききめがない"}, {"kotowaza": "顔にどろをぬる", "imi": "面目、プライドをつぶすこと", "hosoku": "", "yomi": "かおにどろをぬる", "imi_yomi": "めんぼく、ぷらいどをつぶすこと"}, {"kotowaza": "火中の栗をひろう", "imi": "他人のために、あぶない仕事に手を出すこと", "hosoku": "", "yomi": "かちゅうのくりをひろう", "imi_yomi": "たにんのために、あぶないしごとにてをだすこと"}, {"kotowaza": "勝ってかぶとの緒をしめよ", "imi": "成功しても油断せずに、用心深く行動しなさい", "hosoku": "", "yomi": "かってかぶとのおをしめよ", "imi_yomi": "せいこうしてもゆだんせずに、ようじんぶかくこうどうしなさい"}, {"kotowaza": "河童の川流れ", "imi": "得意なことでも油断すると失敗する", "hosoku": "同:弘法にも筆のあやまり／同:猿も木から落ちる", "yomi": "かっぱのかわながれ", "imi_yomi": "とくいなことでもゆだんするとしっぱいする"}, {"kotowaza": "壁に耳あり", "imi": "ひみつの話を、だれに聞かれているかわからない", "hosoku": "壁に耳あり障子に目ありとも言う", "yomi": "かべにみみあり", "imi_yomi": "ひみつのはなしを、だれにきかれているかわからない"}, {"kotowaza": "果報はねて待て", "imi": "運は天まかせだから、あせらずに時を待てばよい", "hosoku": "同:待てば海路のひよりあり／反:まかぬ種は生えぬ", "yomi": "かほうはねてまて", "imi_yomi": "うんはてんまかせだから、あせらずにときをまてばよい"}, {"kotowaza": "かゆいところに手がとどく", "imi": "細かいところまでゆきとどいている", "hosoku": "", "yomi": "かゆいところにてがとどく", "imi_yomi": "こまかいところまでゆきとどいている"}, {"kotowaza": "枯れ木も山のにぎわい", "imi": "つまらない物でも、ないよりはまし", "hosoku": "", "yomi": "かれきもやまのにぎわい", "imi_yomi": "つまらないものでも、ないよりはまし"}, {"kotowaza": "聞いて極楽見て地獄", "imi": "話で聞くのと、実際に見るのとではまるで違う", "hosoku": "", "yomi": "きいてごくらくみてじごく", "imi_yomi": "はなしできくのと、じっさいにみるのとではまるでちがう"}, {"kotowaza": "聞くは一時の恥聞かぬは一生の恥", "imi": "知らないことを聞くのはその時だけはずかしいが、聞かないで過ごせば、死ぬまではずかしい思いをすることになる", "hosoku": "", "yomi": "きくはいっときのはじきかぬはいっしょうのはじ", "imi_yomi": "しらないことをきくのはそのときだけはずかしいが、きかないですごせば、しぬまではずかしいおもいをすることになる"}, {"kotowaza": "きじも鳴かずば打たれまい", "imi": "よけいなことをしなければ、危ない目にあわない", "hosoku": "", "yomi": "きじもなかずばうたれまい", "imi_yomi": "よけいなことをしなければ、あぶないめにあわない"}, {"kotowaza": "窮鼠猫をかむ", "imi": "必死になると弱い者でも強い者を負かす", "hosoku": "", "yomi": "きゅうそねこをかむ", "imi_yomi": "ひっしになるとよわいものでもつよいものをまかす"}, {"kotowaza": "窮すれば通ず", "imi": "どたん場に追いこまれると、かえって活路が開ける", "hosoku": "", "yomi": "きゅうすればつうず", "imi_yomi": "どたんばにおいこまれると、かえってかつろがひらける"}, {"kotowaza": "くさいものにふたをする", "imi": "みっともないことが知られないようにすること", "hosoku": "", "yomi": "くさいものにふたをする", "imi_yomi": "みっともないことがしられないようにすること"}, {"kotowaza": "腐っても鯛", "imi": "価値のある物は、悪い条件になっても、やはり価値がある", "hosoku": "", "yomi": "くさってもたい", "imi_yomi": "かちのあるものは、わるいじょうけんになっても、やはりかちがある"}, {"kotowaza": "口は災いのもと", "imi": "うかつなことを言うと不幸の原因になる", "hosoku": "同:口は災いの門", "yomi": "くちはわざわいのもと", "imi_yomi": "うかつなことをいうとふこうのげんいんになる"}, {"kotowaza": "苦は楽の種", "imi": "今、苦労をすることは、将来に幸福になるための種をまいているようなものである", "hosoku": "", "yomi": "くはらくのたね", "imi_yomi": "いま、くろうをすることは、しょうらいにこうふくになるためのたねをまいているようなものである"}, {"kotowaza": "苦しいときの神だのみ", "imi": "いつもは神など信じていない者が、困ったときにだけ神の助けを借りようとすること", "hosoku": "", "yomi": "くるしいときのかみだのみ", "imi_yomi": "いつもはかみなどしんじていないものが、こまったときにだけかみのたすけをかりようとすること"}, {"kotowaza": "君子あやうきに近寄らず", "imi": "かしこい人は、危ない所へは最初から近寄らない", "hosoku": "反:虎穴にいらずんば虎子を得ず", "yomi": "くんしあやうきにちかよらず", "imi_yomi": "かしこいひとは、あぶないところへはさいしょからちかよらない"}, {"kotowaza": "けがの功名", "imi": "何気なくやったことが、予想もしないよい結果になること", "hosoku": "", "yomi": "けがのこうみょう", "imi_yomi": "なにげなくやったことが、よそうもしないよいけっかになること"}, {"kotowaza": "鯉のたき登り", "imi": "出世をするたとえのこと", "hosoku": "", "yomi": "こいのたきのぼり", "imi_yomi": "しゅっせをするたとえのこと"}, {"kotowaza": "光陰矢のごとし", "imi": "月日が過ぎることが早い", "hosoku": "同:歳月人を待たず", "yomi": "こういんやのごとし", "imi_yomi": "つきひがすぎることがはやい"}, {"kotowaza": "郷に入っては郷に従え", "imi": "習慣はその土地によって違うから、住んでいる所の習慣に従うべきだ", "hosoku": "", "yomi": "ごうにいってはごうにしたがえ", "imi_yomi": "しゅうかんはそのとちによってちがうから、すんでいるところのしゅうかんにしたがうべきだ"}, {"kotowaza": "弘法にも筆のあやまり", "imi": "名人と言われる人でも、時には失敗をすることがある", "hosoku": "同:河童の川流れ／同:猿も木から落ちる", "yomi": "こうぼうにもふでのあやまり", "imi_yomi": "めいじんといわれるひとでも、ときにはしっぱいをすることがある"}, {"kotowaza": "故郷に錦をかざる", "imi": "出世をして故郷に帰ること", "hosoku": "", "yomi": "こきょうににしきをかざる", "imi_yomi": "しゅっせをしてこきょうにかえること"}, {"kotowaza": "心を鬼にする", "imi": "情に流されないようにして、強い態度で接すること", "hosoku": "", "yomi": "こころをおににする", "imi_yomi": "じょうにながされないようにして、つよいたいどでせっすること"}, {"kotowaza": "転ばぬ先の杖", "imi": "失敗しないように前もって用意をすること", "hosoku": "同:石橋をたたいて渡る／同:念には念を入れよ", "yomi": "ころばぬさきのつえ", "imi_yomi": "しっぱいしないようにまえもってよういをすること"}, {"kotowaza": "猿も木から落ちる", "imi": "その道の名人と言われる人でも、時には失敗する", "hosoku": "同:河童の川流れ／同:弘法にも筆のあやまり", "yomi": "さるもきからおちる", "imi_yomi": "そのみちのめいじんといわれるひとでも、ときにはしっぱいする"}, {"kotowaza": "触らぬ神にたたりなし", "imi": "関わりあいにならなければ、災いを受けることもない", "hosoku": "", "yomi": "さわらぬかみにたたりなし", "imi_yomi": "かかわりあいにならなければ、わざわいをうけることもない"}, {"kotowaza": "三度目の正直", "imi": "一度や二度ならば偶然とも言えるが、三度目になると本当と信じてよい", "hosoku": "", "yomi": "さんどめのしょうじき", "imi_yomi": "いちどやにどならばぐうぜんともいえるが、さんどめになるとほんとうとしんじてよい"}, {"kotowaza": "三人よれば文殊のちえ", "imi": "何人かで集まって相談すれば、よいちえが出るものだ", "hosoku": "", "yomi": "さんにんよればもんじゅのちえ", "imi_yomi": "なんにんかであつまってそうだんすれば、よいちえがでるものだ"}, {"kotowaza": "地獄で仏", "imi": "危ないときに思いもよらぬ助けにあってうれしい", "hosoku": "", "yomi": "じごくでほとけ", "imi_yomi": "あぶないときにおもいもよらぬたすけにあってうれしい"}, {"kotowaza": "蛇の道はへび", "imi": "物事には専門家がいて、その道のことはよく知っているものだ", "hosoku": "", "yomi": "じゃのみちはへび", "imi_yomi": "ものごとにはせんもんかがいて、そのみちのことはよくしっているものだ"}, {"kotowaza": "十人十色", "imi": "人によって姿・形が違うように、好みや考え方も人によって違う", "hosoku": "", "yomi": "じゅうにんといろ", "imi_yomi": "ひとによってすがた・かたちがちがうように、このみやかんがえかたもひとによってちがう"}, {"kotowaza": "朱に交われば赤くなる", "imi": "友人との関わりによって、人は良くも悪くもなる", "hosoku": "", "yomi": "しゅにまじわればあかくなる", "imi_yomi": "ゆうじんとのかかわりによって、ひとはよくもわるくもなる"}, {"kotowaza": "知らぬが仏", "imi": "いやなことを言われていても、何も知らないでいれば、心もおだやかでいられる", "hosoku": "", "yomi": "しらぬがほとけ", "imi_yomi": "いやなことをいわれていても、なにもしらないでいれば、こころもおだやかでいられる"}, {"kotowaza": "尻切れトンボ", "imi": "物事が長続きしない人のこと、物事が中途半端なこと", "hosoku": "", "yomi": "しりきれとんぼ", "imi_yomi": "ものごとがながつづきしないひとのこと、ものごとがちゅうとはんぱなこと"}, {"kotowaza": "好きこそ物の上手なれ", "imi": "好きでやることは、いろいろと工夫するので、上達が早い", "hosoku": "反:下手の横好き", "yomi": "すきこそもののじょうずなれ", "imi_yomi": "すきでやることは、いろいろとくふうするので、じょうたつがはやい"}, {"kotowaza": "雀百までおどりをわすれず", "imi": "人はいくつになっても、子どものころのくせがなおらないものだ", "hosoku": "同:三つ子の魂百まで", "yomi": "すずめひゃくまでおどりをわすれず", "imi_yomi": "ひとはいくつになっても、こどものころのくせがなおらないものだ"}, {"kotowaza": "すねにきず持つ", "imi": "悪いことをしたという弱みがある", "hosoku": "", "yomi": "すねにきずもつ", "imi_yomi": "わるいことをしたというよわみがある"}, {"kotowaza": "住めば都", "imi": "住み慣れれば、どんな不便な土地でも住みやすい", "hosoku": "", "yomi": "すめばみやこ", "imi_yomi": "すみなれれば、どんなふべんなとちでもすみやすい"}, {"kotowaza": "急いては事をし損じる", "imi": "あせると、かえって失敗する", "hosoku": "同:急がば回れ／同:待てば海路のひよりあり／反:先んずれば人を制す", "yomi": "せいてはことをしそんじる", "imi_yomi": "あせると、かえってしっぱいする"}, {"kotowaza": "背に腹はかえられぬ", "imi": "重要なことのためには、多少のことを犠牲にしても仕方がない", "hosoku": "", "yomi": "せにはらはかえられぬ", "imi_yomi": "じゅうようなことのためには、たしょうのことをぎせいにしてもしかたがない"}, {"kotowaza": "善は急げ", "imi": "良いことをするためにはためらわずに、早く実行するべきだ", "hosoku": "", "yomi": "ぜんはいそげ", "imi_yomi": "よいことをするためにはためらわずに、はやくじっこうするべきだ"}, {"kotowaza": "そうは問屋がおろさない", "imi": "相手の思うとおりには応じられない", "hosoku": "", "yomi": "そうはとんやがおろさない", "imi_yomi": "あいてのおもうとおりにはおうじられない"}, {"kotowaza": "備えあれば憂いなし", "imi": "ふだんから準備しておけば、いざというときに困らない", "hosoku": "", "yomi": "そなえあればうれいなし", "imi_yomi": "ふだんからじゅんびしておけば、いざというときにこまらない"}, {"kotowaza": "対岸の火事", "imi": "自分にとって、痛くもかゆくもないこと", "hosoku": "", "yomi": "たいがんのかじ", "imi_yomi": "じぶんにとって、いたくもかゆくもないこと"}, {"kotowaza": "大山鳴動してねずみ一匹", "imi": "前ぶれは大きいが、あまり大きなことが起こらない", "hosoku": "", "yomi": "たいざんめいどうしてねずみいっぴき", "imi_yomi": "まえぶれはおおきいが、あまりおおきなことがおこらない"}, {"kotowaza": "大事の前の小事", "imi": "①大きな事をするためには、小さいことに気を配らないといけない ②大事をなすには小さいことにかまっていられない", "hosoku": "", "yomi": "だいじのまえのしょうじ", "imi_yomi": "おおきなことをするためには、ちいさいことにきをくばらないといけない／だいじをなすにはちいさいことにかまっていられない"}, {"kotowaza": "高見の見物", "imi": "自分には関係がないので、ただ見ているだけのこと", "hosoku": "", "yomi": "たかみのけんぶつ", "imi_yomi": "じぶんにはかんけいがないので、ただみているだけのこと"}, {"kotowaza": "たたけばほこりが出る", "imi": "どんなものでも探せば欠点があるものだ", "hosoku": "", "yomi": "たたけばほこりがでる", "imi_yomi": "どんなものでもさがせばけってんがあるものだ"}, {"kotowaza": "立て板に水", "imi": "よどみになく流れるように、すらすらと話すこと", "hosoku": "", "yomi": "たていたにみず", "imi_yomi": "よどみになくながれるように、すらすらとはなすこと"}, {"kotowaza": "たで食う虫もすきずき", "imi": "人の好みもいろいろある", "hosoku": "", "yomi": "たでくうむしもすきずき", "imi_yomi": "ひとのこのみもいろいろある"}, {"kotowaza": "たなからぼた餅", "imi": "思いがけない幸運が転がりこむこと", "hosoku": "", "yomi": "たなからぼたもち", "imi_yomi": "おもいがけないこううんがころがりこむこと"}, {"kotowaza": "短気は損気", "imi": "短気を起こすと損をする", "hosoku": "", "yomi": "たんきはそんき", "imi_yomi": "たんきをおこすとそんをする"}, {"kotowaza": "竹馬の友", "imi": "幼いころからいっしょに遊んだ友達のこと", "hosoku": "", "yomi": "ちくばのとも", "imi_yomi": "おさないころからいっしょにあそんだともだちのこと"}, {"kotowaza": "ちょうちんにつりがね", "imi": "つり合わないこと、比べものにならないこと", "hosoku": "同:月とすっぽん", "yomi": "ちょうちんにつりがね", "imi_yomi": "つりあわないこと、くらべものにならないこと"}, {"kotowaza": "ちりも積もれば山となる", "imi": "わずかなものでも積もり積もれば大量になる", "hosoku": "", "yomi": "ちりもつもればやまとなる", "imi_yomi": "わずかなものでもつもりつもればたいりょうになる"}, {"kotowaza": "月とすっぽん", "imi": "ちょっと似ているが、実際は比較にならないほど、かけ離れている", "hosoku": "同:ちょうちんにつりがね", "yomi": "つきとすっぽん", "imi_yomi": "ちょっとにているが、じっさいはひかくにならないほど、かけはなれている"}, {"kotowaza": "爪に火をともす", "imi": "たいへんけちであること", "hosoku": "", "yomi": "つめにひをともす", "imi_yomi": "たいへんけちであること"}, {"kotowaza": "鶴の一声", "imi": "大勢で話し合っても決まらなかったことが、偉い人の一言で決まること", "hosoku": "", "yomi": "つるのひとこえ", "imi_yomi": "おおぜいではなしあってもきまらなかったことが、えらいひとのひとことできまること"}, {"kotowaza": "敵もさるもの", "imi": "敵もなかなかやる、てごわい", "hosoku": "", "yomi": "てきもさるもの", "imi_yomi": "てきもなかなかやる、てごわい"}, {"kotowaza": "てこでも動かぬ", "imi": "どうやっても動かすことができない", "hosoku": "", "yomi": "てこでもうごかぬ", "imi_yomi": "どうやってもうごかすことができない"}, {"kotowaza": "手塩にかける", "imi": "自分からめんどうを見て大切に育てること", "hosoku": "", "yomi": "てしおにかける", "imi_yomi": "じぶんからめんどうをみてたいせつにそだてること"}, {"kotowaza": "手の裏を返す", "imi": "ちょっとの間に態度をがらりと変えること", "hosoku": "同:手のひらを返す", "yomi": "てのうらをかえす", "imi_yomi": "ちょっとのあいだにたいどをがらりとかえること"}, {"kotowaza": "出る杭は打たれる", "imi": "①頭角をあらわす者は他からにくまれやすい ②さしでがましい行動は他の人から非難されやすい", "hosoku": "", "yomi": "でるくいはうたれる", "imi_yomi": "とうかくをあらわすものはほかからにくまれやすい／さしでがましいこうどうはほかのひとからひなんされやすい"}, {"kotowaza": "てんじょうから目薬", "imi": "効き目のないこと", "hosoku": "同:二階から目薬", "yomi": "てんじょうからめぐすり", "imi_yomi": "ききめのないこと"}, {"kotowaza": "天につばする", "imi": "人に被害を与えようとして、かえって、自分がひどい目に会うこと", "hosoku": "同:天に向かってつばをはく", "yomi": "てんにつばする", "imi_yomi": "ひとにひがいをあたえようとして、かえって、じぶんがひどいめにあうこと"}, {"kotowaza": "灯台もと暗し", "imi": "身近な手元にあることで、かえって、目につかない", "hosoku": "", "yomi": "とうだいもとくらし", "imi_yomi": "みぢかなてもとにあることで、かえって、めにつかない"}, {"kotowaza": "時は金なり", "imi": "時間は貴重であるから、むだにしてはならない", "hosoku": "", "yomi": "ときはかねなり", "imi_yomi": "じかんはきちょうであるから、むだにしてはならない"}, {"kotowaza": "毒を食らわば皿まで", "imi": "いったん悪いことをすると、やけっぱちになり、悪いことを続ける", "hosoku": "", "yomi": "どくをくらわばさらまで", "imi_yomi": "いったんわるいことをすると、やけっぱちになり、わるいことをつづける"}, {"kotowaza": "とらぬ狸の皮算用", "imi": "確実性のないことを期待して計画を立てること", "hosoku": "", "yomi": "とらぬたぬきのかわざんよう", "imi_yomi": "かくじつせいのないことをきたいしてけいかくをたてること"}, {"kotowaza": "毒をもって毒を制す", "imi": "悪をほろぼすために、他の悪を使っておこなう", "hosoku": "", "yomi": "どくをもってどくをせいす", "imi_yomi": "あくをほろぼすために、ほかのあくをつかっておこなう"}, {"kotowaza": "所変われば品変わる", "imi": "土地土地によって、文化や習慣が違う", "hosoku": "同:所変われば水かわる", "yomi": "ところかわればしなかわる", "imi_yomi": "とちとちによって、ぶんかやしゅうかんがちがう"}, {"kotowaza": "飛ぶ鳥後をにごさず", "imi": "立ち去るときには、後が見苦しくないように注意をするべきだ", "hosoku": "同:立つ鳥後をにごさず／反:後は野となれ山となれ", "yomi": "とぶとりあとをにごさず", "imi_yomi": "たちさるときには、あとがみぐるしくないようにちゅういをするべきだ"}, {"kotowaza": "虎の子", "imi": "自分にとって一番大切な物のこと", "hosoku": "", "yomi": "とらのこ", "imi_yomi": "じぶんにとっていちばんたいせつなもののこと"}, {"kotowaza": "どんぐりの背比べ", "imi": "どれも似ていて、順位がつけられない", "hosoku": "", "yomi": "どんぐりのせいくらべ", "imi_yomi": "どれもにていて、じゅんいがつけられない"}, {"kotowaza": "飛んで火にいる夏の虫", "imi": "自分から進んで災いの中に飛びこむこと", "hosoku": "", "yomi": "とんでひにいるなつのむし", "imi_yomi": "じぶんからすすんでわざわいのなかにとびこむこと"}, {"kotowaza": "鳶に油揚げをさらわれる", "imi": "自分が手に入れた物を横から他人にうばわれ、ぼうぜんとすること", "hosoku": "", "yomi": "とんびにあぶらあげをさらわれる", "imi_yomi": "じぶんがてにいれたものをよこからたにんにうばわれ、ぼうぜんとすること"}, {"kotowaza": "ない袖はふれぬ", "imi": "ない物は、出したくても出せない", "hosoku": "", "yomi": "ないそではふれぬ", "imi_yomi": "ないものは、だしたくてもだせない"}, {"kotowaza": "長い物には巻かれろ", "imi": "強い相手には反抗せず、言うなりになっていた方が得である", "hosoku": "", "yomi": "ながいものにはまかれろ", "imi_yomi": "つよいあいてにははんこうせず、いうなりになっていたほうがとくである"}, {"kotowaza": "泣き面にはち", "imi": "悪いことが重なり合うこと", "hosoku": "同:弱り目にたたり目", "yomi": "なきつらにはち", "imi_yomi": "わるいことがかさなりあうこと"}, {"kotowaza": "なくて七癖", "imi": "だれでも多かれ少なかれ癖を持っている", "hosoku": "", "yomi": "なくてななくせ", "imi_yomi": "だれでもおおかれすくなかれくせをもっている"}, {"kotowaza": "なしのつぶて", "imi": "何の連絡もないこと", "hosoku": "", "yomi": "なしのつぶて", "imi_yomi": "なんのれんらくもないこと"}, {"kotowaza": "七転び八起き", "imi": "何度失敗してもくじけず、立ち上がってがんばること", "hosoku": "", "yomi": "ななころびやおき", "imi_yomi": "なんどしっぱいしてもくじけず、たちあがってがんばること"}, {"kotowaza": "逃がした魚は大きい", "imi": "もう少しのところで失った物をいっそうおしいと思う", "hosoku": "", "yomi": "にがしたうおはおおきい", "imi_yomi": "もうすこしのところでうしなったものをいっそうおしいとおもう"}, {"kotowaza": "憎まれっ子世にはばかる", "imi": "人から憎まれる者の方が、世間では幅をきかせられる", "hosoku": "", "yomi": "にくまれっこよにはばかる", "imi_yomi": "ひとからにくまれるもののほうが、せけんでははばをきかせられる"}, {"kotowaza": "二兎をおう者は一兎をも得ず", "imi": "同時に何でも手に入れようと欲ばると、結局、何にも得られない", "hosoku": "同:虻蜂取らず／反:一石二鳥／反:一挙両得", "yomi": "にとをおうものはいっとをもえず", "imi_yomi": "どうじになんでもてにいれようとよくばると、けっきょく、なんにもえられない"}, {"kotowaza": "ぬかに釘", "imi": "いっこうに効き目がない", "hosoku": "同:豆腐にかすがい／同:のれんに腕押し", "yomi": "ぬかにくぎ", "imi_yomi": "いっこうにききめがない"}, {"kotowaza": "盗人を見てなわをなう", "imi": "必要にせまられて、あわてて用意しても、手おくれである", "hosoku": "反:転ばぬ先の杖", "yomi": "ぬすびとをみてなわをなう", "imi_yomi": "ひつようにせまられて、あわててよういしても、ておくれである"}, {"kotowaza": "ぬれ手に粟", "imi": "苦労をせずに、簡単にうまく成功を手に入れること", "hosoku": "同:一攫千金", "yomi": "ぬれてにあわ", "imi_yomi": "くろうをせずに、かんたんにうまくせいこうをてにいれること"}, {"kotowaza": "猫に小判", "imi": "価値のある物でも、持っている人によっては役に立たない", "hosoku": "同:馬の耳に念仏／同:豚に真珠", "yomi": "ねこにこばん", "imi_yomi": "かちのあるものでも、もっているひとによってはやくにたたない"}, {"kotowaza": "寝耳に水", "imi": "突然起こったことにあわてふためくこと", "hosoku": "同:足もとから鳥", "yomi": "ねみみにみず", "imi_yomi": "とつぜんおこったことにあわてふためくこと"}, {"kotowaza": "能ある鷹はつめを隠す", "imi": "実力のある人ほど、いつもはそれを隠し見せびらかしたりしない", "hosoku": "", "yomi": "のうあるたかはつめをかくす", "imi_yomi": "じつりょくのあるひとほど、いつもはそれをかくしみせびらかしたりしない"}, {"kotowaza": "のどもと過ぎれば熱さを忘れる", "imi": "苦しいことも日が立てば忘れてしまう", "hosoku": "", "yomi": "のどもとすぎればあつさをわすれる", "imi_yomi": "くるしいこともひがたてばわすれてしまう"}, {"kotowaza": "乗りかかった船", "imi": "もはや、やめられない状態にある", "hosoku": "", "yomi": "のりかかったふね", "imi_yomi": "もはや、やめられないじょうたいにある"}, {"kotowaza": "のれんに腕押し", "imi": "張りがなく手ごたえがない、効き目がない", "hosoku": "同:豆腐にかすがい／同:ぬかに釘", "yomi": "のれんにうでおし", "imi_yomi": "はりがなくてごたえがない、ききめがない"}, {"kotowaza": "化けの皮をあらわす", "imi": "隠していた物事の本当のことが、ばれて知られてしまう", "hosoku": "同:化けの皮がはげる", "yomi": "ばけのかわをあらわす", "imi_yomi": "かくしていたものごとのほんとうのことが、ばれてしられてしまう"}, {"kotowaza": "はしにも棒にもかからぬ", "imi": "取り扱いにくく、大変こまること", "hosoku": "", "yomi": "はしにもぼうにもかからぬ", "imi_yomi": "とりあつかいにくく、たいへんこまること"}, {"kotowaza": "花より団子", "imi": "外見の美しさよりも中身の利益をとること", "hosoku": "同:名を捨てて実を取る", "yomi": "はなよりだんご", "imi_yomi": "がいけんのうつくしさよりもなかみのりえきをとること"}, {"kotowaza": "歯に衣着せぬ", "imi": "思ったことをずけずけと言うこと", "hosoku": "", "yomi": "はにきぬきせぬ", "imi_yomi": "おもったことをずけずけということ"}, {"kotowaza": "人のふり見て我がふり直せ", "imi": "他人の行いの善悪を見て、自分の態度を見直しなさい", "hosoku": "同:他山の石", "yomi": "ひとのふりみてわがふりなおせ", "imi_yomi": "たにんのおこないのぜんあくをみて、じぶんのたいどをみなおしなさい"}, {"kotowaza": "百聞は一見にしかず", "imi": "たくさんの事を聞くよりも、実際に見る方が確かである", "hosoku": "同:論より証拠", "yomi": "ひゃくぶんはいっけんにしかず", "imi_yomi": "たくさんのことをきくよりも、じっさいにみるほうがたしかである"}, {"kotowaza": "ひょうたんから駒が出る", "imi": "思いもよらぬことが実際におこる", "hosoku": "同:うそから出たまこと", "yomi": "ひょうたんからこまがでる", "imi_yomi": "おもいもよらぬことがじっさいにおこる"}, {"kotowaza": "笛ふけど踊らず", "imi": "一生懸命にさそっても、だれものってこない", "hosoku": "", "yomi": "ふえふけどおどらず", "imi_yomi": "いっしょうけんめいにさそっても、だれものってこない"}, {"kotowaza": "武士は食わねど高楊枝", "imi": "①プライドのある人はどんなに困ってもあわてない ②やせがまんをしても清く正しく生きる", "hosoku": "", "yomi": "ぶしはくわねどたかようじ", "imi_yomi": "ぷらいどのあるひとはどんなにこまってもあわてない／やせがまんをしてもきよくただしくいきる"}, {"kotowaza": "下手の考え休むににたり", "imi": "良い考えがうかばないのに長い時間考えるのは、時間のむだである", "hosoku": "", "yomi": "へたのかんがえやすむににたり", "imi_yomi": "よいかんがえがうかばないのになながいじかんかんがえるのは、じかんのむだである"}, {"kotowaza": "坊主にくけりゃ袈裟までにくい", "imi": "その人をにくむあまりに、その人の使っているものすべてをにくらしく思う", "hosoku": "", "yomi": "ぼうずにくけりゃけさまでにくい", "imi_yomi": "そのひとをにくむあまりに、そのひとのつかっているものすべてをにくらしくおもう"}, {"kotowaza": "負けるが勝ち", "imi": "勝ちを相手にゆずっても、人と争わない方が有利になるものだ", "hosoku": "", "yomi": "まけるがかち", "imi_yomi": "かちをあいてにゆずっても、ひととあらそわないほうがゆうりになるものだ"}, {"kotowaza": "待てば海路のひよりあり", "imi": "気長に待っていれば、自分に運が回ってくる", "hosoku": "同:急いては事をし損じる", "yomi": "まてばかいろのひよりあり", "imi_yomi": "きながにまっていれば、じぶんにうんがまわってくる"}, {"kotowaza": "身から出たさび", "imi": "自分がしたことが原因で、自分が苦しむこと", "hosoku": "同:自業自得／同:因果応報", "yomi": "みからでたさび", "imi_yomi": "じぶんがしたことがげんいんで、じぶんがくるしむこと"}, {"kotowaza": "三つ子の魂百まで", "imi": "子どものころからの癖は、いくつになっても変わらない", "hosoku": "同:雀百までおどりを忘れず", "yomi": "みつごのたましいひゃくまで", "imi_yomi": "こどものころからのくせは、いくつになってもかわらない"}, {"kotowaza": "餅は餅屋", "imi": "何事も専門家にまかせた方がよい", "hosoku": "※蛇の道はへび", "yomi": "もちはもちや", "imi_yomi": "なにごともせんもんかにまかせたほうがよい"}, {"kotowaza": "焼け石に水", "imi": "やっても力不足で効き目がない", "hosoku": "", "yomi": "やけいしにみず", "imi_yomi": "やってもちからぶそくでききめがない"}, {"kotowaza": "安物買いの銭失い", "imi": "安物はそれだけ質が悪いから、結局、買って損をする", "hosoku": "", "yomi": "やすものがいのぜにうしない", "imi_yomi": "やすものはそれだけしつがわるいから、けっきょく、かってそんをする"}, {"kotowaza": "やぶをつついてへびを出す", "imi": "よけいなことをして、かえって災いをまねく", "hosoku": "同:やぶへび", "yomi": "やぶをつついてへびをだす", "imi_yomi": "よけいなことをして、かえってわざわいをまねく"}, {"kotowaza": "柳のしたのどじょう", "imi": "一度、運にめぐまれたからと言って、同じことをしてうまくいくとは限らない", "hosoku": "", "yomi": "やなぎのしたのどじょう", "imi_yomi": "いちど、うんにめぐまれたからといって、おなじことをしてうまくいくとはかぎらない"}, {"kotowaza": "良薬は口ににがし", "imi": "良い薬は口ににがいように、忠告は耳にいたいが身のためになる", "hosoku": "", "yomi": "りょうやくはくちににがし", "imi_yomi": "よいくすりはくちににがいように、ちゅうこくはみみにいたいがみのためになる"}, {"kotowaza": "類は友を呼ぶ", "imi": "気が合うものはたがいに集まる", "hosoku": "", "yomi": "るいはともをよぶ", "imi_yomi": "きがあうものはたがいにあつまる"}, {"kotowaza": "論より証拠", "imi": "証拠を出すのが、物事をはっきりさせる一番良い方法である", "hosoku": "", "yomi": "ろんよりしょうこ", "imi_yomi": "しょうこをだすのが、ものごとをはっきりさせるいちばんよいほうほうである"}, {"kotowaza": "渡る世間に鬼はない", "imi": "世の中には冷たい人ばかりでなく、心の温かい人もいる", "hosoku": "同:捨てる神あれば拾う神あり", "yomi": "わたるせけんにおにはない", "imi_yomi": "よのなかにはつめたいひとばかりでなく、こころのあたたかいひともいる"}];
+
+/* ========================= 状態管理 ========================= */
+let selectedFingers = new Set();
+let selectedTime = 60;
+let timeLeft = 60;
+let mode = 'time';           // 'time' | 'attack'
+let attackTarget = 50;       // タイムアタックの目標文字数
+let elapsed = 0;             // タイムアタックの経過秒
+let timerId = null;
+let score = 0, combo = 0, maxCombo = 0, correct = 0, miss = 0, total = 0;
+let currentKey = '';
+let currentSide = 'left';
+let currentFinger = 'index';
+let charStats = {}; // { key: {c:正解数, m:ミス数} } 文字別の成績
+
+// ---- 英単語コース用の状態 ----
+let source = 'finger';      // 'finger' | 'sequence'(単語/例文コース)
+let selectedLessonKey = null;
+let wordUnit = 'word';      // 'word' | 'sentence'
+let wordTime = 60;
+let seqItems = [];          // 出題対象(単語配列 or 例文の{display,typable}配列)
+let seqQueue = [];          // シャッフル済みの出題キュー
+let seqCurrentDisplay = '';
+let seqCurrentTypable = '';
+let seqCurrentJa = '';
+let seqCharIdx = 0;
+let seqKind = 'word'; // 'word' | 'hyakunin' | 'kotowaza'
+let seqItemMeta = null; // 現在の問題に付随するメタ情報(百人一首の番号など)
+
+// ---- 百人一首 ----
+let hyakuninGroupsSel = new Set();
+let hyakuninTime = 60;
+
+// ---- ことわざ ----
+let kotowazaMode = 'time'; // 'time' | 'attack'
+let kotowazaTime = 60;
+const KOTOWAZA_ATTACK_TARGET = 20; // ことわざ10+意味10
+let itemsCompleted = 0;
+let itemTarget = 0;
+let itemAttackActive = false;
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goFingerSelect(){ source='finger'; showScreen('screen-select'); }
+function goWordSelect(){ renderLessonPills(); showScreen('screen-word-select'); }
+
+/* ---------- 指選択 ---------- */
+function toggleFinger(f){
+  if(selectedFingers.has(f)) selectedFingers.delete(f);
+  else selectedFingers.add(f);
+  renderFingerState();
+}
+function applyPreset(list){
+  selectedFingers = new Set(list);
+  renderFingerState();
+}
+function renderFingerState(){
+  document.querySelectorAll('.finger-btn').forEach(btn=>{
+    const f = btn.dataset.f;
+    btn.classList.toggle('on', selectedFingers.has(f));
+  });
+  ['left','right'].forEach(side=>{
+    Object.keys(FINGER_LABEL).forEach(f=>{
+      const el = document.getElementById(`hand-${side}-${f}`);
+      if(!el) return;
+      if(selectedFingers.has(f)){
+        el.style.background = `var(--f-${f})`;
+        el.style.borderColor = `var(--f-${f})`;
+        el.style.boxShadow = `0 0 14px -2px var(--f-${f})`;
+      } else {
+        el.style.background = '';
+        el.style.borderColor = '';
+        el.style.boxShadow = '';
+      }
+    });
+  });
+  document.getElementById('startBtn').disabled = selectedFingers.size === 0;
+}
+function setTime(t){
+  selectedTime = t;
+  document.querySelectorAll('#block-time .time-btn').forEach(b=>b.classList.toggle('on', Number(b.dataset.t)===t));
+}
+function setAttackTarget(n){
+  attackTarget = n;
+  document.querySelectorAll('#block-attack .time-btn').forEach(b=>b.classList.toggle('on', Number(b.dataset.n)===n));
+}
+function setMode(m){
+  mode = m;
+  document.querySelectorAll('.mode-btn[data-m]').forEach(b=>b.classList.toggle('on', b.dataset.m===m));
+  document.getElementById('block-time').classList.toggle('on', m==='time');
+  document.getElementById('block-attack').classList.toggle('on', m==='attack');
+}
+
+/* ---- 英単語コース ---- */
+function findSentenceGroup(wordLabel){
+  const m = wordLabel.match(/Lesson (\d+)/);
+  if(!m) return null;
+  return LESSON_SENTENCES.find(g=>g.label==='Lesson '+m[1]) || null;
+}
+function renderLessonPills(){
+  const wrap = document.getElementById('lessonPills');
+  wrap.innerHTML = '';
+  LESSON_WORDS.forEach((g,i)=>{
+    const btn = document.createElement('button');
+    btn.className = 'finger-btn';
+    btn.style.minWidth = '78px';
+    btn.style.padding = '10px 14px';
+    btn.textContent = g.label;
+    btn.onclick = ()=> selectLesson(g.key, btn);
+    if(g.key === selectedLessonKey || (!selectedLessonKey && i===0)) btn.classList.add('on');
+    wrap.appendChild(btn);
+  });
+  if(!selectedLessonKey) selectedLessonKey = LESSON_WORDS[0].key;
+  updateSentenceAvailability();
+}
+function selectLesson(key, btnEl){
+  selectedLessonKey = key;
+  document.querySelectorAll('#lessonPills .finger-btn').forEach(b=>b.classList.remove('on'));
+  if(btnEl) btnEl.classList.add('on');
+  updateSentenceAvailability();
+}
+function updateSentenceAvailability(){
+  const group = LESSON_WORDS.find(g=>g.key===selectedLessonKey);
+  const sg = group ? findSentenceGroup(group.label) : null;
+  const has = !!(sg && sg.sentences.length);
+  const btn = document.getElementById('sentenceUnitBtn');
+  btn.disabled = !has;
+  btn.style.opacity = has ? '1' : '.35';
+  btn.style.cursor = has ? 'pointer' : 'default';
+  if(!has && wordUnit==='sentence') setWordUnit('word');
+}
+function setWordUnit(u){
+  if(u==='sentence' && document.getElementById('sentenceUnitBtn').disabled) return;
+  wordUnit = u;
+  document.querySelectorAll('#screen-word-select .mode-btn[data-wm]').forEach(b=>b.classList.toggle('on', b.dataset.wm===u));
+}
+function setWordTime(t){
+  wordTime = t;
+  document.querySelectorAll('#screen-word-select .time-btn[data-wt]').forEach(b=>b.classList.toggle('on', Number(b.dataset.wt)===t));
+}
+function shuffleArray(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+function buildSeqQueue(){
+  if(seqKind==='kotowaza'){
+    // 2件(ことわざ→意味)を1組として組み単位でシャッフルし、連続性を保つ
+    const pairs = [];
+    for(let i=0;i<seqItems.length;i+=2){
+      pairs.push([seqItems[i], seqItems[i+1]]);
+    }
+    shuffleArray(pairs);
+    seqQueue = pairs.flat();
+  } else {
+    seqQueue = shuffleArray([...seqItems]);
+  }
+}
+function startWordPractice(){
+  const group = LESSON_WORDS.find(g=>g.key===selectedLessonKey);
+  if(!group) return;
+  if(wordUnit==='sentence'){
+    const sg = findSentenceGroup(group.label);
+    seqItems = (sg ? sg.sentences : []).map(s=>({display:s.display, typable:s.typable, ja:s.ja||''}));
+  } else {
+    seqItems = group.words.map(w=>({display:w.en, typable:w.en, ja:w.ja||''}));
+  }
+  if(seqItems.length===0) return;
+
+  source = 'sequence';
+  seqKind = 'word';
+  mode = 'time';
+  selectedTime = wordTime;
+  seqCurrentDisplay = ''; seqCurrentTypable = ''; seqCurrentJa = ''; seqCharIdx = 0;
+  seqItemMeta = null;
+  document.getElementById('metaLabel').style.display = 'none';
+  itemAttackActive = false;
+
+  document.getElementById('practiceBrand').textContent =
+    `英単語・${group.label}(${wordUnit==='sentence' ? '例文' : '単語'})`;
+  document.getElementById('wordProgress').style.display = 'block';
+
+  score=0; combo=0; maxCombo=0; correct=0; miss=0; total=0; timeLeft=selectedTime; elapsed=0;
+  charStats = {};
+  document.getElementById('scoreVal').textContent='0';
+  document.getElementById('comboVal').textContent='0';
+  document.getElementById('rateVal').textContent='100%';
+  document.getElementById('timebar').style.width='100%';
+  document.getElementById('timeLabel').textContent='のこり秒';
+  document.getElementById('timeVal').textContent=String(timeLeft);
+
+  buildSeqQueue();
+  buildKeyboardVisual();
+  nextTarget();
+  showScreen('screen-practice');
+  window.addEventListener('keydown', onKeyDown);
+  timerId = setInterval(tick, 1000);
+}
+
+/* ---------- ことわざ・短文コース(百人一首) ---------- */
+function goKotowazaTop(){ showScreen('screen-kotowaza-top'); }
+function goHyakuninSelect(){ renderHyakuninGroups(); showScreen('screen-hyakunin-select'); }
+function goKotowazaSelect(){ showScreen('screen-kotowaza-select'); }
+
+function renderHyakuninGroups(){
+  const wrap = document.getElementById('hyakuninGroups');
+  wrap.innerHTML = '';
+  for(let g=1; g<=10; g++){
+    const from = (g-1)*10 + 1;
+    const to = g*10;
+    const btn = document.createElement('button');
+    btn.className = 'finger-btn';
+    btn.style.minWidth = '84px';
+    btn.textContent = `${from}〜${to}番`;
+    btn.dataset.g = String(g);
+    if(hyakuninGroupsSel.has(g)) btn.classList.add('on');
+    btn.onclick = ()=> toggleHyakuninGroup(g, btn);
+    wrap.appendChild(btn);
+  }
+  updateHyakuninStartBtn();
+}
+function toggleHyakuninGroup(g, btnEl){
+  if(hyakuninGroupsSel.has(g)) hyakuninGroupsSel.delete(g);
+  else hyakuninGroupsSel.add(g);
+  btnEl.classList.toggle('on', hyakuninGroupsSel.has(g));
+  updateHyakuninStartBtn();
+}
+function updateHyakuninStartBtn(){
+  document.getElementById('hyakuninStartBtn').disabled = hyakuninGroupsSel.size===0;
+}
+function setHyakuninTime(t){
+  hyakuninTime = t;
+  document.querySelectorAll('#screen-hyakunin-select .time-btn[data-ht]').forEach(b=>b.classList.toggle('on', Number(b.dataset.ht)===t));
+}
+function startHyakuninPractice(){
+  const nums = new Set();
+  hyakuninGroupsSel.forEach(g=>{
+    const from = (g-1)*10 + 1, to = g*10;
+    for(let n=from; n<=to; n++) nums.add(n);
+  });
+  const poems = HYAKUNIN.filter(p=>nums.has(p.n));
+  if(poems.length===0) return;
+  seqItems = poems.map(p=>({
+    display: `${p.kami}　${p.shimo}`,
+    typable: kanaToRomaji(p.kami + ' ' + p.shimo),
+    meta: `${p.n}番`
+  }));
+
+  source = 'sequence';
+  seqKind = 'hyakunin';
+  mode = 'time';
+  selectedTime = hyakuninTime;
+  seqCurrentDisplay=''; seqCurrentTypable=''; seqCurrentJa=''; seqCharIdx=0; seqItemMeta=null;
+  itemAttackActive = false;
+
+  document.getElementById('practiceBrand').textContent = '百人一首';
+  document.getElementById('wordProgress').style.display = 'block';
+  document.getElementById('metaLabel').style.display = 'inline-block';
+
+  score=0; combo=0; maxCombo=0; correct=0; miss=0; total=0; timeLeft=selectedTime; elapsed=0;
+  charStats = {};
+  document.getElementById('scoreVal').textContent='0';
+  document.getElementById('comboVal').textContent='0';
+  document.getElementById('rateVal').textContent='100%';
+  document.getElementById('timebar').style.width='100%';
+  document.getElementById('timeLabel').textContent='のこり秒';
+  document.getElementById('timeVal').textContent=String(timeLeft);
+
+  buildSeqQueue();
+  buildKeyboardVisual();
+  nextTarget();
+  showScreen('screen-practice');
+  window.addEventListener('keydown', onKeyDown);
+  timerId = setInterval(tick, 1000);
+}
+
+/* ---------- ことわざ・短文コース(ことわざ) ---------- */
+function setKotowazaMode(m){
+  kotowazaMode = m;
+  document.querySelectorAll('#screen-kotowaza-select .mode-btn[data-km]').forEach(b=>b.classList.toggle('on', b.dataset.km===m));
+  document.getElementById('block-kotowaza-time').classList.toggle('on', m==='time');
+  document.getElementById('block-kotowaza-attack').classList.toggle('on', m==='attack');
+}
+function setKotowazaTime(t){
+  kotowazaTime = t;
+  document.querySelectorAll('#screen-kotowaza-select .time-btn[data-kt]').forEach(b=>b.classList.toggle('on', Number(b.dataset.kt)===t));
+}
+function buildKotowazaPairItems(entries){
+  // ことわざ→意味を必ずセットで連続させる
+  const items = [];
+  entries.forEach(e=>{
+    items.push({display:e.kotowaza, typable:kanaToRomaji(e.yomi), meta:'ことわざ'});
+    items.push({display:e.imi, typable:kanaToRomaji(e.imi_yomi), meta:'いみ'});
+  });
+  return items;
+}
+function startKotowazaPractice(){
+  source = 'sequence';
+  seqKind = 'kotowaza';
+  seqCurrentDisplay=''; seqCurrentTypable=''; seqCurrentJa=''; seqCharIdx=0; seqItemMeta=null;
+
+  document.getElementById('practiceBrand').textContent =
+    `ことわざ${kotowazaMode==='attack' ? '(タイムアタック)' : ''}`;
+  document.getElementById('wordProgress').style.display = 'block';
+  document.getElementById('metaLabel').style.display = 'inline-block';
+
+  score=0; combo=0; maxCombo=0; correct=0; miss=0; total=0; elapsed=0;
+  charStats = {};
+  document.getElementById('scoreVal').textContent='0';
+  document.getElementById('comboVal').textContent='0';
+  document.getElementById('rateVal').textContent='100%';
+
+  if(kotowazaMode==='attack'){
+    mode = 'time'; // タイマー表示はしないが内部モードは流用しない(専用フローで完了判定)
+    itemAttackActive = true;
+    itemsCompleted = 0;
+    itemTarget = KOTOWAZA_ATTACK_TARGET;
+    const shuffled = shuffleArray([...KOTOWAZA]).slice(0, itemTarget/2);
+    seqItems = buildKotowazaPairItems(shuffled);
+    seqQueue = [...seqItems]; // 固定順(シャッフルしない。ペアの連続性を保つ)
+    timeLeft = 0;
+    document.getElementById('timeLabel').textContent = 'もんだい';
+    document.getElementById('timeVal').textContent = `0/${itemTarget}`;
+    document.getElementById('timebar').style.width = '0%';
+  } else {
+    mode = 'time';
+    itemAttackActive = false;
+    selectedTime = kotowazaTime;
+    timeLeft = selectedTime;
+    seqItems = buildKotowazaPairItems(KOTOWAZA);
+    buildSeqQueue();
+    document.getElementById('timeLabel').textContent = 'のこり秒';
+    document.getElementById('timeVal').textContent = String(timeLeft);
+    document.getElementById('timebar').style.width = '100%';
+  }
+
+  buildKeyboardVisual();
+  nextTarget();
+  showScreen('screen-practice');
+  window.addEventListener('keydown', onKeyDown);
+  timerId = setInterval(tick, 1000);
+}
+
+/* ---------- 練習ロジック ---------- */
+function buildKeyPool(){
+  const pool = [];
+  selectedFingers.forEach(f=>{
+    FINGER_KEYS[f].left.forEach(k=> pool.push({key:k, side:'left', finger:f}));
+    FINGER_KEYS[f].right.forEach(k=> pool.push({key:k, side:'right', finger:f}));
+  });
+  return pool;
+}
+let keyPool = [];
+
+function startPractice(){
+  keyPool = buildKeyPool();
+  if(keyPool.length === 0) return;
+  source = 'finger';
+  document.getElementById('practiceBrand').textContent = '基礎コース';
+  document.getElementById('wordProgress').style.display = 'none';
+  score=0; combo=0; maxCombo=0; correct=0; miss=0; total=0; timeLeft = selectedTime; elapsed = 0;
+  charStats = {};
+  document.getElementById('scoreVal').textContent = '0';
+  document.getElementById('comboVal').textContent = '0';
+  document.getElementById('rateVal').textContent = '100%';
+  document.getElementById('timebar').style.width = mode==='attack' ? '0%' : '100%';
+  if(mode==='time'){
+    document.getElementById('timeLabel').textContent = 'のこり秒';
+    document.getElementById('timeVal').textContent = String(timeLeft);
+  } else {
+    document.getElementById('timeLabel').textContent = `もじ (もくひょう${attackTarget})`;
+    document.getElementById('timeVal').textContent = `0/${attackTarget}`;
+  }
+  buildKeyboardVisual();
+  nextTarget();
+  showScreen('screen-practice');
+  window.addEventListener('keydown', onKeyDown);
+  timerId = setInterval(tick, 1000);
+}
+function seqBackScreen(){
+  if(source!=='sequence') return 'screen-select';
+  if(seqKind==='hyakunin') return 'screen-hyakunin-select';
+  if(seqKind==='kotowaza') return 'screen-kotowaza-select';
+  return 'screen-word-select';
+}
+function quitPractice(){
+  clearInterval(timerId);
+  window.removeEventListener('keydown', onKeyDown);
+  showScreen(seqBackScreen());
+}
+function tick(){
+  if(itemAttackActive){
+    elapsed++;
+    return; // 終了判定はonKeyDown側(問題数)で行う
+  }
+  if(mode==='time'){
+    timeLeft--;
+    document.getElementById('timeVal').textContent = String(Math.max(timeLeft,0));
+    document.getElementById('timebar').style.width = `${Math.max(timeLeft,0)/selectedTime*100}%`;
+    if(timeLeft<=0) endPractice();
+  } else {
+    elapsed++;
+    // タイムアタックは経過秒のみ表示(終了判定は正解数がonKeyDown側で行う)
+  }
+}
+function nextTarget(){
+  if(source==='sequence') nextTargetSequence();
+  else nextTargetFinger();
+}
+function nextTargetFinger(){
+  let pick;
+  do{ pick = keyPool[Math.floor(Math.random()*keyPool.length)]; }
+  while(keyPool.length>1 && pick.key === currentKey);
+  currentKey = pick.key;
+  currentSide = pick.side;
+  currentFinger = pick.finger;
+  const disp = currentKey === ' ' ? '␣' : currentKey;
+  const tEl = document.getElementById('targetKey');
+  tEl.textContent = disp;
+  tEl.style.color = `var(--f-${currentFinger})`;
+  tEl.style.borderColor = `var(--f-${currentFinger})`;
+  document.getElementById('fingerCallText').textContent =
+    `${currentSide==='left'?'左手':'右手'}・${FINGER_LABEL[currentFinger]}`;
+  highlightKeyboard();
+  highlightMiniHand();
+}
+/* ---------- ひらがな→ローマ字変換(ことわざ・百人一首用) ---------- */
+const KANA_ROMAJI = {
+  'あ':'a','い':'i','う':'u','え':'e','お':'o',
+  'か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko',
+  'さ':'sa','し':'shi','す':'su','せ':'se','そ':'so',
+  'た':'ta','ち':'chi','つ':'tsu','て':'te','と':'to',
+  'な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no',
+  'は':'ha','ひ':'hi','ふ':'fu','へ':'he','ほ':'ho',
+  'ま':'ma','み':'mi','む':'mu','め':'me','も':'mo',
+  'や':'ya','ゆ':'yu','よ':'yo',
+  'ら':'ra','り':'ri','る':'ru','れ':'re','ろ':'ro',
+  'わ':'wa','ゐ':'wi','ゑ':'we','を':'wo','ん':'n',
+  'が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go',
+  'ざ':'za','じ':'ji','ず':'zu','ぜ':'ze','ぞ':'zo',
+  'だ':'da','ぢ':'ji','づ':'zu','で':'de','ど':'do',
+  'ば':'ba','び':'bi','ぶ':'bu','べ':'be','ぼ':'bo',
+  'ぱ':'pa','ぴ':'pi','ぷ':'pu','ぺ':'pe','ぽ':'po'
+};
+const KANA_YOUON = {
+  'きゃ':'kya','きゅ':'kyu','きょ':'kyo',
+  'しゃ':'sha','しゅ':'shu','しょ':'sho',
+  'ちゃ':'cha','ちゅ':'chu','ちょ':'cho',
+  'にゃ':'nya','にゅ':'nyu','にょ':'nyo',
+  'ひゃ':'hya','ひゅ':'hyu','ひょ':'hyo',
+  'みゃ':'mya','みゅ':'myu','みょ':'myo',
+  'りゃ':'rya','りゅ':'ryu','りょ':'ryo',
+  'ぎゃ':'gya','ぎゅ':'gyu','ぎょ':'gyo',
+  'じゃ':'ja','じゅ':'ju','じょ':'jo',
+  'びゃ':'bya','びゅ':'byu','びょ':'byo',
+  'ぴゃ':'pya','ぴゅ':'pyu','ぴょ':'pyo'
+};
+function kanaToRomaji(text){
+  let out = '';
+  const s = text.replace(/[、・／]/g, ' '); // 読点・中黒・スラッシュはスペース扱い
+  let i = 0;
+  while(i < s.length){
+    const c = s[i];
+    if(c === ' '){ out += ' '; i++; continue; }
+    if(c === 'っ' || c === 'ッ'){
+      const next2 = s.substring(i+1, i+3);
+      const next1 = s.substring(i+1, i+2);
+      let nextRomaji = KANA_YOUON[next2] || KANA_ROMAJI[next2] || KANA_ROMAJI[next1] || '';
+      if(nextRomaji){ out += nextRomaji[0]; } // 次の子音を1つ重ねる
+      i++; continue;
+    }
+    const two = s.substring(i, i+2);
+    if(KANA_YOUON[two]){ out += KANA_YOUON[two]; i += 2; continue; }
+    if(KANA_ROMAJI[c]){ out += KANA_ROMAJI[c]; i++; continue; }
+    // 未対応文字はそのまま(記号など)
+    out += c; i++;
+  }
+  return out;
+}
+function keyFingerFull(k){
+  for(const f in FINGER_KEYS){
+    if(FINGER_KEYS[f].left.includes(k)) return {finger:f, side:'left'};
+    if(FINGER_KEYS[f].right.includes(k)) return {finger:f, side:'right'};
+  }
+  return null;
+}
+function nextTargetSequence(){
+  if(!seqCurrentTypable || seqCharIdx >= seqCurrentTypable.length){
+    if(seqQueue.length===0){
+      if(itemAttackActive) return; // タイムアタックは尽きたら終了(endPracticeで処理済みのはず)
+      buildSeqQueue();
+    }
+    const item = seqQueue.shift();
+    seqCurrentDisplay = item.display;
+    seqCurrentTypable = item.typable;
+    seqCurrentJa = item.ja || '';
+    seqItemMeta = item.meta || null;
+    seqCharIdx = 0;
+    if(seqItemMeta){
+      document.getElementById('metaLabel').textContent = seqItemMeta;
+    }
+  }
+  currentKey = seqCurrentTypable[seqCharIdx];
+  const info = keyFingerFull(currentKey) || {finger:'index', side:'left'};
+  currentFinger = info.finger;
+  currentSide = info.side;
+  const disp = currentKey === ' ' ? '␣' : currentKey;
+  const tEl = document.getElementById('targetKey');
+  tEl.textContent = disp;
+  tEl.style.color = `var(--f-${currentFinger})`;
+  tEl.style.borderColor = `var(--f-${currentFinger})`;
+  document.getElementById('fingerCallText').textContent =
+    `${currentSide==='left'?'左手':'右手'}・${FINGER_LABEL[currentFinger]}`;
+  renderWordProgress();
+  highlightKeyboard();
+  highlightMiniHand();
+}
+function renderWordProgress(){
+  const el = document.getElementById('wordProgress');
+  const done = seqCurrentTypable.slice(0, seqCharIdx).replace(/ /g,'␣');
+  const cur = (seqCurrentTypable[seqCharIdx]||'').replace(/ /g,'␣');
+  const rest = seqCurrentTypable.slice(seqCharIdx+1).replace(/ /g,'␣');
+  let html = `<span class="done">${done}</span><span class="cur">${cur}</span><span class="rest">${rest}</span>`;
+  if(seqKind==='word'){
+    if(wordUnit==='sentence'){
+      html += `<span class="ja-hint">${seqCurrentDisplay}</span>`;
+      if(seqCurrentJa) html += `<span class="ja-hint">${seqCurrentJa}</span>`;
+    } else if(seqCurrentJa){
+      html += `<span class="ja-hint">${seqCurrentJa}</span>`;
+    }
+  } else if(seqKind==='hyakunin' || seqKind==='kotowaza'){
+    html += `<span class="ja-hint">${seqCurrentDisplay}</span>`;
+  }
+  el.innerHTML = html;
+}
+function highlightMiniHand(){
+  document.querySelectorAll('.finger-mini').forEach(el=> el.classList.remove('hl'));
+  const el = document.getElementById(`mini-${currentSide}-${currentFinger}`);
+  if(el) el.classList.add('hl');
+  document.getElementById('miniHandLabel').textContent =
+    `オレンジの指(${currentSide==='left'?'左':'右'}・${FINGER_LABEL[currentFinger]})をつかってね`;
+}
+function onKeyDown(e){
+  if(e.repeat) return;
+  const pressed = e.key === ' ' ? ' ' : e.key.toLowerCase();
+  if(pressed.length !== 1) return;
+  total++;
+  const targetKeyAtPress = currentKey;
+  if(!charStats[targetKeyAtPress]) charStats[targetKeyAtPress] = {c:0,m:0};
+
+  if(pressed === currentKey){
+    correct++; combo++; maxCombo = Math.max(maxCombo, combo);
+    charStats[targetKeyAtPress].c++;
+    const bonus = combo>0 && combo % 10 === 0 ? 5 : 0;
+    score += 10 + Math.min(combo,20) + bonus;
+    document.getElementById('scoreVal').textContent = String(score);
+    document.getElementById('comboVal').textContent = String(combo);
+    if(source==='sequence'){
+      seqCharIdx++;
+      if(itemAttackActive && seqCharIdx >= seqCurrentTypable.length){
+        itemsCompleted++;
+        document.getElementById('timeVal').textContent = `${itemsCompleted}/${itemTarget}`;
+        document.getElementById('timebar').style.width = `${Math.min(itemsCompleted/itemTarget*100,100)}%`;
+        if(itemsCompleted >= itemTarget){ endPractice(); return; }
+      }
+    }
+    if(mode==='attack'){
+      document.getElementById('timeVal').textContent = `${correct}/${attackTarget}`;
+      document.getElementById('timebar').style.width = `${Math.min(correct/attackTarget*100,100)}%`;
+      if(correct >= attackTarget){ endPractice(); return; }
+    }
+    nextTarget();
+  } else {
+    miss++; combo = 0;
+    charStats[targetKeyAtPress].m++;
+    document.getElementById('comboVal').textContent = '0';
+    const tEl = document.getElementById('targetKey');
+    tEl.classList.remove('miss'); void tEl.offsetWidth; tEl.classList.add('miss');
+  }
+  const rate = total>0 ? Math.round(correct/total*100) : 100;
+  document.getElementById('rateVal').textContent = rate + '%';
+}
+function endPractice(){
+  clearInterval(timerId);
+  window.removeEventListener('keydown', onKeyDown);
+  const rate = total>0 ? Math.round(correct/total*100) : 0;
+  document.getElementById('finalScore').textContent = String(score);
+  document.getElementById('rTotal').textContent = String(total);
+  document.getElementById('rCorrect').textContent = String(correct);
+  document.getElementById('rMiss').textContent = String(miss);
+  document.getElementById('rRate').textContent = rate + '%';
+  document.getElementById('rMaxCombo').textContent = String(maxCombo);
+  if(source==='sequence'){
+    document.getElementById('rFingersLabel').textContent =
+      seqKind==='hyakunin' ? 'れんしゅうした範囲' :
+      seqKind==='kotowaza' ? 'モード' : '練習したレッスン';
+    if(seqKind==='hyakunin'){
+      const label = [...hyakuninGroupsSel].sort((a,b)=>a-b)
+        .map(g=>`${(g-1)*10+1}〜${g*10}番`).join('・');
+      document.getElementById('rFingers').textContent = label || '-';
+    } else if(seqKind==='kotowaza'){
+      document.getElementById('rFingers').textContent =
+        kotowazaMode==='attack' ? 'タイムアタック(20問)' : '通常(じかん)';
+    } else {
+      const group = LESSON_WORDS.find(g=>g.key===selectedLessonKey);
+      document.getElementById('rFingers').textContent =
+        `${group ? group.label : ''}(${wordUnit==='sentence' ? '例文' : '単語'})`;
+    }
+  } else {
+    document.getElementById('rFingersLabel').textContent = 'つかった指';
+    document.getElementById('rFingers').textContent =
+      [...selectedFingers].map(f=>FINGER_LABEL[f]).join('・') || '-';
+  }
+
+  // ---- にがてな文字(ミス上位)の一覧 ----
+  const missEntries = Object.entries(charStats)
+    .filter(([,v])=> v.m>0)
+    .sort((a,b)=> b[1].m - a[1].m)
+    .slice(0,5);
+  const missListEl = document.getElementById('missList');
+  if(missEntries.length===0){
+    missListEl.innerHTML = '<div class="miss-empty">ミスなし！パーフェクト！</div>';
+  } else {
+    missListEl.innerHTML = missEntries.map(([k,v])=>{
+      const disp = k===' ' ? '␣' : k;
+      const r = Math.round(v.c/(v.c+v.m)*100);
+      return `<div class="miss-row"><span class="mk">${disp}</span><span>${v.m}回まちがえた</span><span class="mr">正解率${r}%</span></div>`;
+    }).join('');
+  }
+
+  // ---- 得意な文字をさがす(正解率のいちばん高い文字) ----
+  let bestChar = null, bestRate = 0;
+  Object.entries(charStats).forEach(([k,v])=>{
+    const attempts = v.c+v.m;
+    if(attempts>=2){
+      const r = v.c/attempts*100;
+      if(r>bestRate || (r===bestRate && attempts> (charStats[bestChar]? charStats[bestChar].c+charStats[bestChar].m:0))){
+        bestRate = r; bestChar = k;
+      }
+    }
+  });
+
+  const praise = document.getElementById('praiseText');
+  if(rate>=95) praise.textContent = 'かんぺき！すごいね！';
+  else if(rate>=80) praise.textContent = 'よくがんばったね！';
+  else praise.textContent = 'つぎもチャレンジしよう！';
+
+  document.getElementById('detailPraiseText').textContent =
+    pickDetailPraise(bestChar, Math.round(bestRate), maxCombo, total);
+
+  showScreen('screen-result');
+}
+function retryPractice(){
+  showScreen(seqBackScreen());
+}
+
+function pickDetailPraise(bestChar, bestRate, maxComboVal, totalCount){
+  const disp = bestChar===' ' ? 'スペース' : (bestChar||'').toUpperCase();
+  const patterns = [];
+  if(bestChar && bestRate>=80){
+    patterns.push(`「${disp}」のタイプは正解率${bestRate}%だったよ！`);
+    patterns.push(`「${disp}」をばっちり打ててたね、さすが！`);
+  }
+  patterns.push('さいごまでやりきってえらかったよ！');
+  if(maxComboVal>=10) patterns.push(`さいだいコンボ${maxComboVal}回、集中できてたね！`);
+  patterns.push(`${totalCount}回もキーを打ったね、がんばったね！`);
+  return patterns[Math.floor(Math.random()*patterns.length)];
+}
+
+/* ---------- キーボードのビジュアル ---------- */
+const KB_ROWS = [ ['q','w','e','r','t','y','u','i','o','p'],
+                   ['a','s','d','f','g','h','j','k','l'],
+                   ['z','x','c','v','b','n','m'] ];
+function keyFinger(k){
+  for(const f in FINGER_KEYS){
+    if(FINGER_KEYS[f].left.includes(k) || FINGER_KEYS[f].right.includes(k)) return f;
+  }
+  return null;
+}
+function buildKeyboardVisual(){
+  const kb = document.getElementById('kb');
+  kb.innerHTML = '';
+  KB_ROWS.forEach(row=>{
+    const rowEl = document.createElement('div');
+    rowEl.className = 'kb-row';
+    row.forEach(k=>{
+      const el = document.createElement('div');
+      el.className = 'key';
+      el.id = 'key-'+k;
+      el.textContent = k;
+      rowEl.appendChild(el);
+    });
+    kb.appendChild(rowEl);
+  });
+  const spaceRow = document.createElement('div');
+  spaceRow.className = 'kb-row';
+  const spaceKey = document.createElement('div');
+  spaceKey.className = 'key';
+  spaceKey.id = 'key- ';
+  spaceKey.style.width = '160px';
+  spaceKey.textContent = 'space';
+  spaceRow.appendChild(spaceKey);
+  kb.appendChild(spaceRow);
+}
+function highlightKeyboard(){
+  document.querySelectorAll('.key').forEach(el=>{
+    el.classList.add('dim');
+    el.classList.remove('active');
+    el.style.background = '';
+    el.style.color = '';
+  });
+  keyPool.forEach(p=>{
+    const el = document.getElementById('key-'+p.key);
+    if(el) el.classList.remove('dim');
+  });
+  const activeEl = document.getElementById('key-'+currentKey);
+  if(activeEl){
+    activeEl.classList.remove('dim');
+    activeEl.classList.add('active');
+    activeEl.style.background = `var(--f-${currentFinger})`;
+  }
+}
+
+renderFingerState();
+</script>
+</body>
+</html>
