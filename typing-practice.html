@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ゆびドリル | タイピング練習</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12161f;
+    --surface: #1b212c;
+    --surface-2: #232a37;
+    --line: #313a4a;
+    --text: #e9edf4;
+    --text-dim: #8791a3;
+
+    --f-index: #4c9be8;   /* 人差し指 */
+    --f-middle: #6ec5a8;  /* 中指 */
+    --f-ring: #f4a259;    /* 薬指 */
+    --f-pinky: #e85d75;   /* 小指 */
+    --f-thumb: #b48ead;   /* 親指 */
+    --hl-orange: #ff9d3d; /* ベンチマーク準拠:つかう指のハイライト */
+  }
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Zen Kaku Gothic New', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  input, button{ font-size:16px; -webkit-appearance:none; appearance:none; font-family:inherit; }
+  .display{ font-family:'Kosugi Maru', sans-serif; }
+  .mono{ font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+
+  .screen{ display:none; min-height:100dvh; flex-direction:column; }
+  .screen.active{ display:flex; }
+
+  /* ---------- 共通ヘッダー ---------- */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 20px; border-bottom:1px solid var(--line);
+  }
+  .backbtn{
+    background:none; border:1px solid var(--line); color:var(--text-dim);
+    border-radius:10px; padding:8px 14px; cursor:pointer;
+  }
+  .backbtn:hover{ color:var(--text); border-color:var(--text-dim); }
+  .brand{ font-family:'Kosugi Maru', sans-serif; font-size:15px; letter-spacing:.04em; color:var(--text-dim); }
+
+  /* ---------- トップ画面 ---------- */
+  .hero{
+    padding: 48px 24px 24px;
+    text-align:center;
+  }
+  .hero h1{
+    font-family:'Kosugi Maru', sans-serif;
+    font-size: clamp(28px, 8vw, 44px);
+    margin: 0 0 8px;
+    background: linear-gradient(90deg, var(--f-index), var(--f-middle), var(--f-ring), var(--f-pinky));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p{ color: var(--text-dim); margin:0; font-size:14px; }
+
+  .course-grid{
+    display:grid; grid-template-columns: 1fr; gap:14px;
+    padding: 12px 20px 40px; max-width: 520px; width:100%; margin:0 auto;
+  }
+  @media(min-width:600px){ .course-grid{ grid-template-columns: 1fr 1fr; } }
+
+  .course-card{
+    position:relative;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px;
+    text-align:left;
+    cursor:pointer;
+    color: var(--text);
+    display:flex; flex-direction:column; gap:6px;
+    transition: transform .15s ease, border-color .15s ease;
+  }
+  .course-card:active{ transform: scale(.98); }
+  .course-card:not(.disabled):hover{ border-color: var(--accent, var(--f-index)); }
+  .course-card .num{ font-family:'Kosugi Maru',sans-serif; font-size:12px; color: var(--accent); }
+  .course-card .ttl{ font-size:18px; font-weight:700; }
+  .course-card .desc{ font-size:13px; color:var(--text-dim); line-height:1.5; }
+  .course-card.disabled{ opacity:.45; cursor:default; }
+  .course-card .badge{
+    position:absolute; top:14px; right:14px; font-size:11px;
+    background: var(--surface-2); color:var(--text-dim); padding:3px 8px; border-radius:20px;
+  }
+
+  /* ---------- 指えらび画面 ---------- */
+  .section-title{
+    font-family:'Kosugi Maru', sans-serif;
+    text-align:center; font-size:20px; margin: 28px 0 4px;
+  }
+  .section-sub{ text-align:center; color:var(--text-dim); font-size:13px; margin-bottom:22px; }
+
+  .finger-select{
+    display:flex; flex-wrap:wrap; gap:12px; justify-content:center;
+    padding: 0 20px;
+  }
+  .finger-btn{
+    border-radius: 14px; padding: 14px 16px; min-width:88px;
+    background: var(--surface); border:2px solid var(--line);
+    color: var(--text-dim); cursor:pointer; text-align:center;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  .finger-btn .dot{ width:20px; height:20px; border-radius:50%; }
+  .finger-btn.on{ color: var(--text); background: var(--surface-2); }
+  .finger-btn[data-f="index"].on{ border-color: var(--f-index); box-shadow:0 0 0 3px color-mix(in srgb, var(--f-index) 25%, transparent); }
+  .finger-btn[data-f="middle"].on{ border-color: var(--f-middle); box-shadow:0 0 0 3px color-mix(in srgb, var(--f-middle) 25%, transparent); }
+  .finger-btn[data-f="ring"].on{ border-color: var(--f-ring); box-shadow:0 0 0 3px color-mix(in srgb, var(--f-ring) 25%, transparent); }
+  .finger-btn[data-f="pinky"].on{ border-color: var(--f-pinky); box-shadow:0 0 0 3px color-mix(in srgb, var(--f-pinky) 25%, transparent); }
+  .finger-btn[data-f="thumb"].on{ border-color: var(--f-thumb); box-shadow:0 0 0 3px color-mix(in srgb, var(--f-thumb) 25%, transparent); }
+
+  .hands-wrap{ display:flex; justify-content:center; padding: 26px 20px 6px; }
+  .hands{ display:flex; gap: 28px; }
+  .hand{ display:flex; gap:6px; align-items:flex-end; }
+  .hand.right{ flex-direction:row-reverse; }
+  .finger-shape{
+    width: 22px; border-radius: 12px 12px 6px 6px;
+    background: var(--surface-2); border:1px solid var(--line);
+    transition: background .2s, border-color .2s, box-shadow .2s;
+  }
+  .finger-shape.h-pinky{ height:58px; }
+  .finger-shape.h-ring{ height:76px; }
+  .finger-shape.h-middle{ height:84px; }
+  .finger-shape.h-index{ height:70px; }
+  .finger-shape.h-thumb{ height:46px; align-self:flex-end; margin-bottom:-10px; }
+
+  .presets{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; padding: 20px 20px 0; }
+  .preset-btn{
+    background:none; border:1px solid var(--line); color:var(--text-dim);
+    border-radius: 20px; padding:6px 14px; font-size:12.5px; cursor:pointer;
+  }
+  .preset-btn:hover{ color:var(--text); }
+
+  .time-select{ display:flex; gap:10px; justify-content:center; padding: 26px 20px 0; }
+  .time-btn{
+    background: var(--surface); border:1px solid var(--line); color:var(--text-dim);
+    border-radius: 12px; padding:10px 18px; cursor:pointer; font-size:14px;
+  }
+  .time-btn.on{ color:var(--text); border-color: var(--text); background:var(--surface-2); }
+
+  .mode-select{ display:flex; gap:10px; justify-content:center; padding: 26px 20px 0; }
+  .mode-btn{
+    background: var(--surface); border:1px solid var(--line); color:var(--text-dim);
+    border-radius: 999px; padding:10px 20px; cursor:pointer; font-size:14px;
+  }
+  .mode-btn.on{ color:#0c1016; border-color: var(--hl-orange); background: var(--hl-orange); font-weight:700; }
+  .mode-block{ display:none; }
+  .mode-block.on{ display:flex; }
+
+  .start-wrap{ display:flex; justify-content:center; padding: 32px 20px 40px; }
+  .start-btn{
+    background: linear-gradient(90deg, var(--f-index), var(--f-middle));
+    color:#0c1016; font-weight:700; border:none; border-radius: 999px;
+    padding: 16px 44px; font-size:16px; cursor:pointer;
+    box-shadow: 0 8px 24px -8px color-mix(in srgb, var(--f-index) 60%, transparent);
+  }
+  .start-btn:disabled{ opacity:.35; cursor:default; box-shadow:none; }
+  .hint{ text-align:center; color:var(--text-dim); font-size:12px; padding: 0 24px 20px; }
+
+  /* ---------- 練習画面 ---------- */
+  .practice-top{
+    display:flex; justify-content:space-between; align-items:center;
+    padding: 16px 22px; gap:12px; flex-wrap:wrap;
+  }
+  .stat{ display:flex; flex-direction:column; align-items:center; min-width:64px; }
+  .stat .v{ white-space:nowrap; }
+  .stat .v{ font-family:'Kosugi Maru',sans-serif; font-size:20px; }
+  .stat .l{ font-size:10.5px; color:var(--text-dim); }
+  .combo{ color: var(--f-ring); }
+  .timebar-wrap{ height:6px; background: var(--surface-2); margin: 0 20px; border-radius:4px; overflow:hidden; }
+  .timebar{ height:100%; background: linear-gradient(90deg, var(--f-middle), var(--f-index)); width:100%; transition: width .2s linear; }
+
+  .stage{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px; padding: 10px 20px 20px; }
+  .target-key{
+    font-family:'Kosugi Maru',sans-serif;
+    font-size: 96px; font-weight:700; line-height:1;
+    width:150px; height:150px; border-radius:28px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--surface); border:3px solid var(--line);
+    text-transform:uppercase;
+    transition: transform .08s ease;
+  }
+  .target-key.miss{ animation: shake .28s; }
+  @keyframes shake{ 0%,100%{transform:translateX(0);} 25%{transform:translateX(-8px);} 75%{transform:translateX(8px);} }
+  .finger-call{ font-size:13px; color:var(--text-dim); text-align:center; }
+  .finger-call b{ color: var(--text); }
+
+  .kb{ display:flex; flex-direction:column; gap:6px; align-items:center; }
+  .kb-row{ display:flex; gap:6px; }
+  .key{
+    width:34px; height:34px; border-radius:8px; background: var(--surface);
+    border:1px solid var(--line); color:var(--text-dim);
+    display:flex; align-items:center; justify-content:center; font-size:13px;
+    text-transform:uppercase;
+  }
+  .key.dim{ opacity:.28; }
+  .key.active{ color:#0c1016; font-weight:700; transform: translateY(-2px); box-shadow:0 4px 10px -3px rgba(0,0,0,.5); }
+
+  .practice-foot{ text-align:center; padding: 4px 20px 28px; color:var(--text-dim); font-size:12px; }
+
+  .hands-mini-wrap{ display:flex; justify-content:center; padding: 6px 20px 4px; }
+  .hands-mini{ display:flex; gap:20px; }
+  .hand-mini{ display:flex; gap:4px; align-items:flex-end; }
+  .hand-mini.right{ flex-direction:row-reverse; }
+  .finger-mini{
+    width:14px; border-radius:8px 8px 4px 4px;
+    background: var(--surface-2); border:1px solid var(--line);
+    transition: background .12s, border-color .12s, box-shadow .12s;
+  }
+  .finger-mini.h-pinky{ height:36px; }
+  .finger-mini.h-ring{ height:48px; }
+  .finger-mini.h-middle{ height:54px; }
+  .finger-mini.h-index{ height:44px; }
+  .finger-mini.h-thumb{ height:28px; align-self:flex-end; margin-bottom:-6px; }
+  .finger-mini.hl{ background: var(--hl-orange); border-color: var(--hl-orange); box-shadow:0 0 12px -1px var(--hl-orange); }
+  .hands-mini-label{ text-align:center; font-size:11.5px; color:var(--text-dim); padding-bottom:10px; }
+
+  /* ---------- 結果画面 ---------- */
+  .result-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding: 20px; text-align:center; }
+  .result-score{ font-family:'Kosugi Maru',sans-serif; font-size:64px; }
+  .result-grid{
+    display:grid; grid-template-columns: repeat(2,1fr); gap: 10px 26px;
+    background: var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding: 20px 26px; margin-top: 6px; min-width: 260px;
+  }
+  .result-grid .row{ display:flex; justify-content:space-between; gap:16px; font-size:14px; }
+  .result-grid .row span:first-child{ color:var(--text-dim); }
+  .result-actions{ display:flex; gap:12px; margin-top:10px; }
+  .btn-secondary{
+    background:none; border:1px solid var(--line); color:var(--text);
+    border-radius:12px; padding:12px 22px; cursor:pointer;
+  }
+  .btn-primary{
+    background: var(--f-index); border:none; color:#0c1016; font-weight:700;
+    border-radius:12px; padding:12px 22px; cursor:pointer;
+  }
+  .praise{ font-family:'Kosugi Maru',sans-serif; font-size:16px; color: var(--f-middle); }
+  .detail-praise{ font-size:13px; color: var(--text-dim); margin-top:-8px; }
+
+  .miss-panel{
+    background: var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding: 16px 22px; min-width:260px; text-align:left;
+  }
+  .miss-panel .ttl{ font-size:12.5px; color:var(--text-dim); margin-bottom:10px; }
+  .miss-row{ display:flex; align-items:center; gap:10px; padding:5px 0; font-size:14px; }
+  .miss-row .mk{
+    font-family:'Kosugi Maru',sans-serif; width:26px; height:26px; border-radius:8px;
+    background: var(--surface-2); display:flex; align-items:center; justify-content:center;
+    text-transform:uppercase; color: var(--f-pinky); border:1px solid var(--f-pinky);
+  }
+  .miss-row .mr{ color:var(--text-dim); margin-left:auto; }
+  .miss-empty{ color:var(--text-dim); font-size:13px; }
+</style>
+</head>
+<body>
+
+<!-- =================== 画面1: トップ(コース選択) =================== -->
+<div class="screen active" id="screen-top">
+  <div class="hero">
+    <h1>ゆびドリル</h1>
+    <p>ブラインドタッチ練習アプリ</p>
+  </div>
+  <div class="course-grid">
+    <div class="course-card" style="--accent:#4c9be8" onclick="goFingerSelect()">
+      <div class="num">COURSE 1</div>
+      <div class="ttl">きそコース</div>
+      <div class="desc">ホームポジションから。つかう指をえらんで練習しよう。</div>
+    </div>
+    <div class="course-card disabled" style="--accent:#6ec5a8">
+      <span class="badge">じゅんび中</span>
+      <div class="num">COURSE 2</div>
+      <div class="ttl">ことわざ・たん文</div>
+      <div class="desc">日本語のローマ字入力で、ことわざや短い文を練習。</div>
+    </div>
+    <div class="course-card disabled" style="--accent:#f4a259">
+      <span class="badge">じゅんび中</span>
+      <div class="num">COURSE 3</div>
+      <div class="ttl">えい単語</div>
+      <div class="desc">えい単語をローマ字入力の感覚でタイピング。</div>
+    </div>
+    <div class="course-card disabled" style="--accent:#e85d75">
+      <span class="badge">じゅんび中</span>
+      <div class="num">COURSE 4</div>
+      <div class="ttl">きょうか書コース</div>
+      <div class="desc">学校の教科書にあわせた単語・例文で練習。</div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== 画面2: 指えらび =================== -->
+<div class="screen" id="screen-select">
+  <div class="topbar">
+    <button class="backbtn" onclick="showScreen('screen-top')">← もどる</button>
+    <div class="brand">きそコース</div>
+    <div style="width:64px"></div>
+  </div>
+
+  <div class="section-title">つかう指をえらぼう</div>
+  <div class="section-sub">1本から5本まで、すきな組み合わせでOK</div>
+
+  <div class="finger-select">
+    <button class="finger-btn" data-f="pinky" onclick="toggleFinger('pinky')"><span class="dot" style="background:var(--f-pinky)"></span>小指</button>
+    <button class="finger-btn" data-f="ring" onclick="toggleFinger('ring')"><span class="dot" style="background:var(--f-ring)"></span>薬指</button>
+    <button class="finger-btn" data-f="middle" onclick="toggleFinger('middle')"><span class="dot" style="background:var(--f-middle)"></span>中指</button>
+    <button class="finger-btn" data-f="index" onclick="toggleFinger('index')"><span class="dot" style="background:var(--f-index)"></span>人差し指</button>
+    <button class="finger-btn" data-f="thumb" onclick="toggleFinger('thumb')"><span class="dot" style="background:var(--f-thumb)"></span>親指</button>
+  </div>
+
+  <div class="hands-wrap">
+    <div class="hands">
+      <div class="hand left">
+        <div class="finger-shape h-pinky" id="hand-left-pinky"></div>
+        <div class="finger-shape h-ring" id="hand-left-ring"></div>
+        <div class="finger-shape h-middle" id="hand-left-middle"></div>
+        <div class="finger-shape h-index" id="hand-left-index"></div>
+        <div class="finger-shape h-thumb" id="hand-left-thumb"></div>
+      </div>
+      <div class="hand right">
+        <div class="finger-shape h-pinky" id="hand-right-pinky"></div>
+        <div class="finger-shape h-ring" id="hand-right-ring"></div>
+        <div class="finger-shape h-middle" id="hand-right-middle"></div>
+        <div class="finger-shape h-index" id="hand-right-index"></div>
+        <div class="finger-shape h-thumb" id="hand-right-thumb"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="presets">
+    <button class="preset-btn" onclick="applyPreset(['index'])">人差し指だけ</button>
+    <button class="preset-btn" onclick="applyPreset(['index','middle'])">人差し指+中指</button>
+    <button class="preset-btn" onclick="applyPreset(['index','middle','ring','pinky'])">親指以外ぜんぶ</button>
+    <button class="preset-btn" onclick="applyPreset(['index','middle','ring','pinky','thumb'])">10本ぜんぶ</button>
+  </div>
+
+  <div class="section-title" style="margin-top:30px;">モードをえらぼう</div>
+  <div class="mode-select">
+    <button class="mode-btn on" data-m="time" onclick="setMode('time')">じかんモード</button>
+    <button class="mode-btn" data-m="attack" onclick="setMode('attack')">タイムアタック</button>
+  </div>
+
+  <div class="mode-block on" id="block-time">
+    <div class="time-select">
+      <button class="time-btn" data-t="30" onclick="setTime(30)">30秒</button>
+      <button class="time-btn on" data-t="60" onclick="setTime(60)">60秒</button>
+      <button class="time-btn" data-t="90" onclick="setTime(90)">90秒</button>
+      <button class="time-btn" data-t="120" onclick="setTime(120)">120秒</button>
+    </div>
+  </div>
+
+  <div class="mode-block" id="block-attack">
+    <div class="time-select">
+      <button class="time-btn" data-n="20" onclick="setAttackTarget(20)">20文字</button>
+      <button class="time-btn on" data-n="50" onclick="setAttackTarget(50)">50文字</button>
+      <button class="time-btn" data-n="100" onclick="setAttackTarget(100)">100文字</button>
+    </div>
+  </div>
+
+  <div class="start-wrap">
+    <button class="start-btn" id="startBtn" disabled onclick="startPractice()">▶ れんしゅうスタート</button>
+  </div>
+  <div class="hint">キーボードのあるパソコンで練習してね</div>
+</div>
+
+<!-- =================== 画面3: 練習中 =================== -->
+<div class="screen" id="screen-practice">
+  <div class="topbar">
+    <button class="backbtn" onclick="quitPractice()">✕ やめる</button>
+    <div class="brand">きそコース</div>
+    <div style="width:64px"></div>
+  </div>
+
+  <div class="practice-top">
+    <div class="stat"><div class="v" id="scoreVal">0</div><div class="l">スコア</div></div>
+    <div class="stat"><div class="v combo" id="comboVal">0</div><div class="l">コンボ</div></div>
+    <div class="stat"><div class="v" id="timeVal">60</div><div class="l" id="timeLabel">のこり秒</div></div>
+    <div class="stat"><div class="v" id="rateVal">100%</div><div class="l">正解率</div></div>
+  </div>
+  <div class="timebar-wrap"><div class="timebar" id="timebar"></div></div>
+
+  <div class="stage">
+    <div class="target-key" id="targetKey">a</div>
+    <div class="finger-call">つかう指: <b id="fingerCallText">左手・人差し指</b></div>
+
+    <div class="kb" id="kb"></div>
+
+    <div class="hands-mini-wrap">
+      <div class="hands-mini">
+        <div class="hand-mini left">
+          <div class="finger-mini h-pinky" id="mini-left-pinky"></div>
+          <div class="finger-mini h-ring" id="mini-left-ring"></div>
+          <div class="finger-mini h-middle" id="mini-left-middle"></div>
+          <div class="finger-mini h-index" id="mini-left-index"></div>
+          <div class="finger-mini h-thumb" id="mini-left-thumb"></div>
+        </div>
+        <div class="hand-mini right">
+          <div class="finger-mini h-pinky" id="mini-right-pinky"></div>
+          <div class="finger-mini h-ring" id="mini-right-ring"></div>
+          <div class="finger-mini h-middle" id="mini-right-middle"></div>
+          <div class="finger-mini h-index" id="mini-right-index"></div>
+          <div class="finger-mini h-thumb" id="mini-right-thumb"></div>
+        </div>
+      </div>
+    </div>
+    <div class="hands-mini-label" id="miniHandLabel">オレンジの指をつかってね</div>
+  </div>
+  <div class="practice-foot">正しいキーをおすと次のもじに進みます</div>
+</div>
+
+<!-- =================== 画面4: 結果 =================== -->
+<div class="screen" id="screen-result">
+  <div class="topbar">
+    <div style="width:64px"></div>
+    <div class="brand">けっか</div>
+    <div style="width:64px"></div>
+  </div>
+  <div class="result-wrap">
+    <div class="praise" id="praiseText">よくがんばったね！</div>
+    <div class="detail-praise" id="detailPraiseText"></div>
+    <div class="result-score" id="finalScore">0</div>
+    <div class="result-grid">
+      <div class="row"><span>打った文字数</span><span id="rTotal">0</span></div>
+      <div class="row"><span>正解</span><span id="rCorrect">0</span></div>
+      <div class="row"><span>ミス</span><span id="rMiss">0</span></div>
+      <div class="row"><span>正解率</span><span id="rRate">0%</span></div>
+      <div class="row"><span>さいだいコンボ</span><span id="rMaxCombo">0</span></div>
+      <div class="row"><span>つかった指</span><span id="rFingers">-</span></div>
+    </div>
+    <div class="miss-panel">
+      <div class="ttl">にがてな文字</div>
+      <div id="missList"><div class="miss-empty">ミスなし！パーフェクト！</div></div>
+    </div>
+    <div class="result-actions">
+      <button class="btn-secondary" onclick="showScreen('screen-top')">コース選択へ</button>
+      <button class="btn-primary" onclick="showScreen('screen-select')">もう一回</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   データ定義(拡張ポイント)
+   ・今後コース2〜4を追加する場合は WORD_BANKS に単語/例文の
+     配列を追加し、対応するコース画面・出題ロジックを増設する。
+   ・FINGER_KEYS を編集すれば出題対象のキー割り当てを調整できる。
+========================================================= */
+
+// JIS配列・ホームポジション基準の指割り当て(アルファベット26字を網羅)
+const FINGER_KEYS = {
+  pinky:  { left:['q','a','z'],           right:['p'] },
+  ring:   { left:['w','s','x'],           right:['o','l'] },
+  middle: { left:['e','d','c'],           right:['i','k'] },
+  index:  { left:['r','t','f','g','v','b'], right:['y','u','h','j','n','m'] },
+  thumb:  { left:[' '],                   right:[' '] }
+};
+
+const FINGER_LABEL = { pinky:'小指', ring:'薬指', middle:'中指', index:'人差し指', thumb:'親指' };
+
+// 拡張用プレースホルダー(コース2〜4はここに単語/例文データを追加していく)
+const WORD_BANKS = {
+  proverbs: [],   // ことわざ・短文コース用
+  english: [],    // 英単語コース用
+  textbook: []    // 教科書準拠コース用(例: NEW TREASURE Stage1と連携予定)
+};
+
+/* ========================= 状態管理 ========================= */
+let selectedFingers = new Set();
+let selectedTime = 60;
+let timeLeft = 60;
+let mode = 'time';           // 'time' | 'attack'
+let attackTarget = 50;       // タイムアタックの目標文字数
+let elapsed = 0;             // タイムアタックの経過秒
+let timerId = null;
+let score = 0, combo = 0, maxCombo = 0, correct = 0, miss = 0, total = 0;
+let currentKey = '';
+let currentSide = 'left';
+let currentFinger = 'index';
+let charStats = {}; // { key: {c:正解数, m:ミス数} } 文字別の成績
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goFingerSelect(){ showScreen('screen-select'); }
+
+/* ---------- 指選択 ---------- */
+function toggleFinger(f){
+  if(selectedFingers.has(f)) selectedFingers.delete(f);
+  else selectedFingers.add(f);
+  renderFingerState();
+}
+function applyPreset(list){
+  selectedFingers = new Set(list);
+  renderFingerState();
+}
+function renderFingerState(){
+  document.querySelectorAll('.finger-btn').forEach(btn=>{
+    const f = btn.dataset.f;
+    btn.classList.toggle('on', selectedFingers.has(f));
+  });
+  ['left','right'].forEach(side=>{
+    Object.keys(FINGER_LABEL).forEach(f=>{
+      const el = document.getElementById(`hand-${side}-${f}`);
+      if(!el) return;
+      if(selectedFingers.has(f)){
+        el.style.background = `var(--f-${f})`;
+        el.style.borderColor = `var(--f-${f})`;
+        el.style.boxShadow = `0 0 14px -2px var(--f-${f})`;
+      } else {
+        el.style.background = '';
+        el.style.borderColor = '';
+        el.style.boxShadow = '';
+      }
+    });
+  });
+  document.getElementById('startBtn').disabled = selectedFingers.size === 0;
+}
+function setTime(t){
+  selectedTime = t;
+  document.querySelectorAll('#block-time .time-btn').forEach(b=>b.classList.toggle('on', Number(b.dataset.t)===t));
+}
+function setAttackTarget(n){
+  attackTarget = n;
+  document.querySelectorAll('#block-attack .time-btn').forEach(b=>b.classList.toggle('on', Number(b.dataset.n)===n));
+}
+function setMode(m){
+  mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('on', b.dataset.m===m));
+  document.getElementById('block-time').classList.toggle('on', m==='time');
+  document.getElementById('block-attack').classList.toggle('on', m==='attack');
+}
+
+/* ---------- 練習ロジック ---------- */
+function buildKeyPool(){
+  const pool = [];
+  selectedFingers.forEach(f=>{
+    FINGER_KEYS[f].left.forEach(k=> pool.push({key:k, side:'left', finger:f}));
+    FINGER_KEYS[f].right.forEach(k=> pool.push({key:k, side:'right', finger:f}));
+  });
+  return pool;
+}
+let keyPool = [];
+
+function startPractice(){
+  keyPool = buildKeyPool();
+  if(keyPool.length === 0) return;
+  score=0; combo=0; maxCombo=0; correct=0; miss=0; total=0; timeLeft = selectedTime; elapsed = 0;
+  charStats = {};
+  document.getElementById('scoreVal').textContent = '0';
+  document.getElementById('comboVal').textContent = '0';
+  document.getElementById('rateVal').textContent = '100%';
+  document.getElementById('timebar').style.width = mode==='attack' ? '0%' : '100%';
+  if(mode==='time'){
+    document.getElementById('timeLabel').textContent = 'のこり秒';
+    document.getElementById('timeVal').textContent = String(timeLeft);
+  } else {
+    document.getElementById('timeLabel').textContent = `もじ (もくひょう${attackTarget})`;
+    document.getElementById('timeVal').textContent = `0/${attackTarget}`;
+  }
+  buildKeyboardVisual();
+  nextTarget();
+  showScreen('screen-practice');
+  window.addEventListener('keydown', onKeyDown);
+  timerId = setInterval(tick, 1000);
+}
+function quitPractice(){
+  clearInterval(timerId);
+  window.removeEventListener('keydown', onKeyDown);
+  showScreen('screen-select');
+}
+function tick(){
+  if(mode==='time'){
+    timeLeft--;
+    document.getElementById('timeVal').textContent = String(Math.max(timeLeft,0));
+    document.getElementById('timebar').style.width = `${Math.max(timeLeft,0)/selectedTime*100}%`;
+    if(timeLeft<=0) endPractice();
+  } else {
+    elapsed++;
+    // タイムアタックは経過秒のみ表示(終了判定は正解数がonKeyDown側で行う)
+  }
+}
+function nextTarget(){
+  let pick;
+  do{ pick = keyPool[Math.floor(Math.random()*keyPool.length)]; }
+  while(keyPool.length>1 && pick.key === currentKey);
+  currentKey = pick.key;
+  currentSide = pick.side;
+  currentFinger = pick.finger;
+  const disp = currentKey === ' ' ? '␣' : currentKey;
+  const tEl = document.getElementById('targetKey');
+  tEl.textContent = disp;
+  tEl.style.color = `var(--f-${currentFinger})`;
+  tEl.style.borderColor = `var(--f-${currentFinger})`;
+  document.getElementById('fingerCallText').textContent =
+    `${currentSide==='left'?'左手':'右手'}・${FINGER_LABEL[currentFinger]}`;
+  highlightKeyboard();
+  highlightMiniHand();
+}
+function highlightMiniHand(){
+  document.querySelectorAll('.finger-mini').forEach(el=> el.classList.remove('hl'));
+  const el = document.getElementById(`mini-${currentSide}-${currentFinger}`);
+  if(el) el.classList.add('hl');
+  document.getElementById('miniHandLabel').textContent =
+    `オレンジの指(${currentSide==='left'?'左':'右'}・${FINGER_LABEL[currentFinger]})をつかってね`;
+}
+function onKeyDown(e){
+  if(e.repeat) return;
+  const pressed = e.key === ' ' ? ' ' : e.key.toLowerCase();
+  if(pressed.length !== 1) return;
+  total++;
+  const targetKeyAtPress = currentKey;
+  if(!charStats[targetKeyAtPress]) charStats[targetKeyAtPress] = {c:0,m:0};
+
+  if(pressed === currentKey){
+    correct++; combo++; maxCombo = Math.max(maxCombo, combo);
+    charStats[targetKeyAtPress].c++;
+    const bonus = combo>0 && combo % 10 === 0 ? 5 : 0;
+    score += 10 + Math.min(combo,20) + bonus;
+    document.getElementById('scoreVal').textContent = String(score);
+    document.getElementById('comboVal').textContent = String(combo);
+    if(mode==='attack'){
+      document.getElementById('timeVal').textContent = `${correct}/${attackTarget}`;
+      document.getElementById('timebar').style.width = `${Math.min(correct/attackTarget*100,100)}%`;
+      if(correct >= attackTarget){ endPractice(); return; }
+    }
+    nextTarget();
+  } else {
+    miss++; combo = 0;
+    charStats[targetKeyAtPress].m++;
+    document.getElementById('comboVal').textContent = '0';
+    const tEl = document.getElementById('targetKey');
+    tEl.classList.remove('miss'); void tEl.offsetWidth; tEl.classList.add('miss');
+  }
+  const rate = total>0 ? Math.round(correct/total*100) : 100;
+  document.getElementById('rateVal').textContent = rate + '%';
+}
+function endPractice(){
+  clearInterval(timerId);
+  window.removeEventListener('keydown', onKeyDown);
+  const rate = total>0 ? Math.round(correct/total*100) : 0;
+  document.getElementById('finalScore').textContent = String(score);
+  document.getElementById('rTotal').textContent = String(total);
+  document.getElementById('rCorrect').textContent = String(correct);
+  document.getElementById('rMiss').textContent = String(miss);
+  document.getElementById('rRate').textContent = rate + '%';
+  document.getElementById('rMaxCombo').textContent = String(maxCombo);
+  document.getElementById('rFingers').textContent =
+    [...selectedFingers].map(f=>FINGER_LABEL[f]).join('・') || '-';
+
+  // ---- にがてな文字(ミス上位)の一覧 ----
+  const missEntries = Object.entries(charStats)
+    .filter(([,v])=> v.m>0)
+    .sort((a,b)=> b[1].m - a[1].m)
+    .slice(0,5);
+  const missListEl = document.getElementById('missList');
+  if(missEntries.length===0){
+    missListEl.innerHTML = '<div class="miss-empty">ミスなし！パーフェクト！</div>';
+  } else {
+    missListEl.innerHTML = missEntries.map(([k,v])=>{
+      const disp = k===' ' ? '␣' : k;
+      const r = Math.round(v.c/(v.c+v.m)*100);
+      return `<div class="miss-row"><span class="mk">${disp}</span><span>${v.m}回まちがえた</span><span class="mr">正解率${r}%</span></div>`;
+    }).join('');
+  }
+
+  // ---- 得意な文字をさがす(正解率のいちばん高い文字) ----
+  let bestChar = null, bestRate = 0;
+  Object.entries(charStats).forEach(([k,v])=>{
+    const attempts = v.c+v.m;
+    if(attempts>=2){
+      const r = v.c/attempts*100;
+      if(r>bestRate || (r===bestRate && attempts> (charStats[bestChar]? charStats[bestChar].c+charStats[bestChar].m:0))){
+        bestRate = r; bestChar = k;
+      }
+    }
+  });
+
+  const praise = document.getElementById('praiseText');
+  if(rate>=95) praise.textContent = 'かんぺき！すごいね！';
+  else if(rate>=80) praise.textContent = 'よくがんばったね！';
+  else praise.textContent = 'つぎもチャレンジしよう！';
+
+  document.getElementById('detailPraiseText').textContent =
+    pickDetailPraise(bestChar, Math.round(bestRate), maxCombo, total);
+
+  showScreen('screen-result');
+}
+
+function pickDetailPraise(bestChar, bestRate, maxComboVal, totalCount){
+  const disp = bestChar===' ' ? 'スペース' : (bestChar||'').toUpperCase();
+  const patterns = [];
+  if(bestChar && bestRate>=80){
+    patterns.push(`「${disp}」のタイプは正解率${bestRate}%だったよ！`);
+    patterns.push(`「${disp}」をばっちり打ててたね、さすが！`);
+  }
+  patterns.push('さいごまでやりきってえらかったよ！');
+  if(maxComboVal>=10) patterns.push(`さいだいコンボ${maxComboVal}回、集中できてたね！`);
+  patterns.push(`${totalCount}回もキーを打ったね、がんばったね！`);
+  return patterns[Math.floor(Math.random()*patterns.length)];
+}
+
+/* ---------- キーボードのビジュアル ---------- */
+const KB_ROWS = [ ['q','w','e','r','t','y','u','i','o','p'],
+                   ['a','s','d','f','g','h','j','k','l'],
+                   ['z','x','c','v','b','n','m'] ];
+function keyFinger(k){
+  for(const f in FINGER_KEYS){
+    if(FINGER_KEYS[f].left.includes(k) || FINGER_KEYS[f].right.includes(k)) return f;
+  }
+  return null;
+}
+function buildKeyboardVisual(){
+  const kb = document.getElementById('kb');
+  kb.innerHTML = '';
+  KB_ROWS.forEach(row=>{
+    const rowEl = document.createElement('div');
+    rowEl.className = 'kb-row';
+    row.forEach(k=>{
+      const el = document.createElement('div');
+      el.className = 'key';
+      el.id = 'key-'+k;
+      el.textContent = k;
+      rowEl.appendChild(el);
+    });
+    kb.appendChild(rowEl);
+  });
+  const spaceRow = document.createElement('div');
+  spaceRow.className = 'kb-row';
+  const spaceKey = document.createElement('div');
+  spaceKey.className = 'key';
+  spaceKey.id = 'key- ';
+  spaceKey.style.width = '160px';
+  spaceKey.textContent = 'space';
+  spaceRow.appendChild(spaceKey);
+  kb.appendChild(spaceRow);
+}
+function highlightKeyboard(){
+  document.querySelectorAll('.key').forEach(el=>{
+    el.classList.add('dim');
+    el.classList.remove('active');
+    el.style.background = '';
+    el.style.color = '';
+  });
+  keyPool.forEach(p=>{
+    const el = document.getElementById('key-'+p.key);
+    if(el) el.classList.remove('dim');
+  });
+  const activeEl = document.getElementById('key-'+currentKey);
+  if(activeEl){
+    activeEl.classList.remove('dim');
+    activeEl.classList.add('active');
+    activeEl.style.background = `var(--f-${currentFinger})`;
+  }
+}
+
+renderFingerState();
+</script>
+</body>
+</html>
